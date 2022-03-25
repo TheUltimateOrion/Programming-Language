@@ -1,4 +1,3 @@
-import sys
 import basic
 
 while True:
