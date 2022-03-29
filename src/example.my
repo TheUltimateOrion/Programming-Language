@@ -1,29 +1,33 @@
-FUN oopify(prefix) -> prefix + "oop"
+# This is a very useful piece of software
 
-FUN join(elements, separator)
-    VAR result = ""
-    VAR len = LEN(elements)
+FUNC oopify(prefix) => prefix + "oop"
 
-    FOR i = 0 TO len THEN
-        VAR result = result + elements / i
-        IF i != len - 1 THEN VAR result = result + separator
-    END
+FUNC join(elements, separator)
+	DIM result = ""
+	DIM len = len(elements)
 
-    RETURN result
+	FOR i = 0 TO len THEN
+		DIM result = result + (elements : i)
+		IF i != len - 1 THEN 
+			DIM result = result + separator
+		END
+	END
+
+	RETURN result
 END
 
-FUN map(elements, func)
-    VAR new_elements = []
+FUNC map(elements, _func)
+	DIM new_elements = []
 
-    FOR i = 0 TO LEN(elements) THEN
-        APPEND(new_elements, func(elements / i))
-    END
+	FOR i = 0 TO len(elements) THEN
+		append(new_elements, _func(elements : i))
+	END
 
-    RETURN new_elements
+	RETURN new_elements
 END
 
-PRINT("HELLO, WORLD")
+print("Greetings universe!")
 
 FOR i = 0 TO 5 THEN
-    PRINT(join(map(["l", "sp"], oopify), ", "))
+	print(join(map(["l", "sp"], oopify), ", "))
 END
