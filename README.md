@@ -2,7 +2,7 @@
 An interpreted language written in python
 
 ## TODO
-- [**Work in progress**] Add modulus (`%`) operator
+- [ ] Add modulus (`%`) operator [**_Work in progress_**]
 - [ ] Add absolute value (`||`) operator
 - [ ] Add proper list operators
 - [ ] Add more built-in functions and variables
