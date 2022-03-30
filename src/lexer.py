@@ -36,23 +36,24 @@ TT_NEWLINE      = 'NEWLINE'
 TT_EOF          = 'EOF'
 
 KEYWORDS = [
-    'DIM',
-    'AND',
-    'OR',
-    'NOT',
-    'IF',
-    'ELIF',
-    'ELSE',
-    'FOR',
-    'TO',
-    'STEP',
-    'WHILE',
-    'FUNC',
-    'THEN',
-    'END',
-    'RETURN',
-    'CONTINUE',
-    'BREAK'
+    'dim',
+    'and',
+    'or',
+    'not',
+    'if',
+    'elif',
+    'else',
+    'for',
+    'to',
+    'step',
+    'while',
+    'func',
+    'then',
+    'end',
+    'return',
+    'continue',
+    'break',
+    'import'
 ]
 
 ########################################

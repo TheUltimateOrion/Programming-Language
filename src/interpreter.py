@@ -4,6 +4,7 @@
 
 import math
 import os
+from pathlib import Path
 from errors import RTError
 from lexer import TT_COLON, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
 from parser import Parser
@@ -667,7 +668,7 @@ class BuiltInFunction(BaseFunction):
     execute_run.arg_names = ['fn']
 
     def execute_abs(self, exec_ctx):
-        number = exec_ctx.symbol_table.get('number')
+        number = exec_ctx.symbol_table.get('value')
 
         if not isinstance(number, Number):
             return RTResult().failure(RTError(
@@ -677,12 +678,12 @@ class BuiltInFunction(BaseFunction):
             ))
 
         return RTResult().success(Number(number.value * -1) if number.value < 0 else number)
-    execute_abs.arg_names = ['number']
+    execute_abs.arg_names = ['value']
 
     def execute_typeof(self, exec_ctx):
-        val = exec_ctx.symbol_table.get('val')
+        value = exec_ctx.symbol_table.get('value')
 
-        if not isinstance(val, Value):
+        if not isinstance(value, Value):
             return RTResult().failure(RTError(
                 self.pos_start, self.pos_end,
                 "Argument must be a Value",
@@ -690,8 +691,8 @@ class BuiltInFunction(BaseFunction):
             ))
 
 
-        return RTResult().success(String(val.__class__))
-    execute_typeof.arg_names = ['val']
+        return RTResult().success(String(value.__class__))
+    execute_typeof.arg_names = ['value']
 
 
 BuiltInFunction.print       = BuiltInFunction("print")
@@ -711,24 +712,58 @@ BuiltInFunction.run         = BuiltInFunction("run")
 BuiltInFunction.abs         = BuiltInFunction("abs")
 BuiltInFunction.typeof      = BuiltInFunction("typeof")
 
-def run(fn, text):
-    # Generate tokens
-    lexer = Lexer(fn, text)
-    tokens, error = lexer.make_tokens()
-    if error: return None, error
+class Import:
+    def __init__(self, import_name):
+        self.import_name = import_name
+        self.set_context()
+        self.set_pos()
 
-    # Generate AST
-    parser = Parser(tokens)
-    ast = parser.parse()
-    if ast.error: return None, ast.error
+    def set_pos(self, pos_start=None, pos_end=None):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        return self
 
-    # Run program
-    interpreter = Interpreter()
-    context = Context('<program>')
-    context.symbol_table = global_symbol_table
-    result = interpreter.visit(ast.node, context)
+    def set_context(self, context=None):
+        self.context = context
+        return self
 
-    return result.value, result.error
+    def import_module(self):
+        fn = self.import_name
+
+        if not isinstance(fn, String):
+            return None, RTError(
+                self.pos_start, self.pos_end,
+                "Argument must be string",
+                self.context
+            )
+
+        fn = fn.value
+
+        if not Path(fn).exists():
+            return None, RTError(
+                    self.import_name.pos_start, self.import_name.pos_end,
+                    f"Module does not exist \"{fn}\"\n",
+                    self.context
+                )
+
+        f = open(fn)
+
+        module = f.read()
+
+        _, error = run(fn, module)
+
+        if error:
+            return None, RTError(
+                self.import_name.pos_start, self.import_name.pos_end,
+                f"Failed to finish importing script \"{fn}\"\n" +
+                error.as_string(),
+                self.context
+            )
+
+        return RTResult().success(Number.null), None
+
+    def __repr__(self):
+        return str(self.import_name)
 
 ########################################
 # CONTEXT
@@ -860,9 +895,9 @@ class Interpreter:
             result, error = left.get_comparison_lte(right)
         elif node.op_tok.type == TT_GTE:
             result, error = left.get_comparison_gte(right)
-        elif node.op_tok.matches(TT_KEYWORD, 'AND'):
+        elif node.op_tok.matches(TT_KEYWORD, 'and'):
             result, error = left.anded_by(right)
-        elif node.op_tok.matches(TT_KEYWORD, 'OR'):
+        elif node.op_tok.matches(TT_KEYWORD, 'or'):
             result, error = left.ored_by(right)
 
         if error:
@@ -879,7 +914,7 @@ class Interpreter:
 
         if node.op_tok.type == TT_MINUS:
             number, error = number.multed_by(Number(-1))
-        elif node.op_tok.matches(TT_KEYWORD, 'NOT'):
+        elif node.op_tok.matches(TT_KEYWORD, 'not'):
             number, error = number.notted()
 
         if error:
@@ -990,6 +1025,18 @@ class Interpreter:
 
         return res.success(func_value)
 
+    def visit_ImportNode(self, node, context):
+        res = RTResult()
+
+        import_name = res.register(self.visit(node.import_name, context))
+        if res.error: return res
+        _import = Import(import_name).set_context(context).set_pos(node.pos_start, node.pos_end)
+        _, error = _import.import_module()
+
+        if error: return res.failure(error)
+
+        return res.success(Number.null)
+
     def visit_CallNode(self, node, context):
         res = RTResult()
         args = []
@@ -1050,3 +1097,22 @@ global_symbol_table.set("len", BuiltInFunction.len)
 global_symbol_table.set("run", BuiltInFunction.run)
 global_symbol_table.set("abs", BuiltInFunction.abs)
 global_symbol_table.set("typeof", BuiltInFunction.typeof)
+
+def run(fn, text):
+    # Generate tokens
+    lexer = Lexer(fn, text)
+    tokens, error = lexer.make_tokens()
+    if error: return None, error
+
+    # Generate AST
+    parser = Parser(tokens)
+    ast = parser.parse()
+    if ast.error: return None, ast.error
+
+    # Run program
+    interpreter = Interpreter()
+    context = Context('<program>')
+    context.symbol_table = global_symbol_table
+    result = interpreter.visit(ast.node, context)
+
+    return result.value, result.error

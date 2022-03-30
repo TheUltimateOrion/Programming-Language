@@ -1,33 +1,33 @@
 // This is a very useful piece of software
 
-FUNC oopify(prefix) => prefix + "oop"
+func oopify(prefix) => prefix + "oop"
 
-FUNC join(elements, separator)
-	DIM result = ""
-	DIM LEN = len(elements)
+func join(elements, separator)
+	dim result = ""
+	dim LEN = len(elements)
 
-	FOR i = 0 TO len THEN
-		DIM result = result + elements : i
-		IF i != len - 1 THEN
-			DIM result = result + separator
-		END
-	END
+	for i = 0 to LEN then
+		dim result = result + elements : i
+		if i != LEN - 1 then
+			dim result = result + separator
+		end
+	end
 
-	RETURN result
-END
+	return result
+end
 
-FUNC map(elements, _func)
-	DIM new_elements = []
+func map(elements, _func)
+	dim new_elements = []
 
-	FOR i = 0 TO len(elements) THEN
+	for i = 0 to len(elements) then
 		append(new_elements, _func(elements : i))
-	END
+	end
 
-	RETURN new_elements
-END
+	return new_elements
+end
 
-print("Hello World!")
+print("Hello World!");
 
-FOR i = 0 TO 5 THEN
+for i = 0 to 5 then
 	print(join(map(["l", "sp"], oopify), ", "))
-END
+end

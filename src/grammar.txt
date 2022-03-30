@@ -11,9 +11,9 @@ expr       : KEYWORD:VAR IDENTIFIER EQ expr
 comp-expr  : NOT comp-expr
            : arith-expr ((EE|LT|GT|LTE|GTE) arith-expr)*
 
-arith-expr : term ((PLUS|MINUS|COLON|UNION) term)*
+arith-expr : term ((PLUS|MINUS|UNION) term)*
 
-term       : factor ((MUL|DIV|MOD) factor)*
+term       : factor ((MUL|DIV|COLON|CONCAT|MOD) factor)*
 
 factor     : (PLUS|MINUS) factor
            : power
@@ -24,11 +24,13 @@ call       : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
 
 atom       : INT|FLOAT|STRING|IDENTIFIER
            : LPAREN expre RPAREN
+           : import-expr
            : list-expr
            : if-expr
            : for-expr
            : while-expr
            : func-def
+           : import-expr
 
 list-expr  : LSQUARE (expr (COMMA expr)*)? RSQUARE
 
@@ -59,3 +61,4 @@ func-def   : KEYWORD:FUN IDENTIFIER?
              (ARROW expr)
            | (NEWLINE statements KEYWORD:END)
 
+import-expr : KEYWORD:IMPORT expr
