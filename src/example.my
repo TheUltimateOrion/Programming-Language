@@ -1,14 +1,14 @@
-# This is a very useful piece of software
+// This is a very useful piece of software
 
 FUNC oopify(prefix) => prefix + "oop"
 
 FUNC join(elements, separator)
 	DIM result = ""
-	DIM len = len(elements)
+	DIM LEN = len(elements)
 
 	FOR i = 0 TO len THEN
-		DIM result = result + (elements : i)
-		IF i != len - 1 THEN 
+		DIM result = result + elements : i
+		IF i != len - 1 THEN
 			DIM result = result + separator
 		END
 	END
@@ -26,7 +26,7 @@ FUNC map(elements, _func)
 	RETURN new_elements
 END
 
-print("Greetings universe!")
+print("Hello World!")
 
 FOR i = 0 TO 5 THEN
 	print(join(map(["l", "sp"], oopify), ", "))

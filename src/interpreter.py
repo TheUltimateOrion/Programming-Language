@@ -5,7 +5,7 @@
 import math
 import os
 from errors import RTError
-from lexer import TT_COLON, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
+from lexer import TT_COLON, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
 from parser import Parser
 
 
@@ -53,7 +53,6 @@ class RTResult:
         return self
 
     def should_return(self):
-        # Note: this will allow you to continue and break outside the current function
         return (
             self.error or
             self.func_return_value or
@@ -66,6 +65,8 @@ class RTResult:
 ########################################
 
 class Value:
+    __class__ = None
+
     def __init__(self):
         self.set_pos()
         self.set_context()
@@ -127,9 +128,12 @@ class Value:
     def ored_by(self, other):
         return None, self.illegal_operation(other)
 
+    def concat(self, other):
+        return None, self.illegal_operation(other)
+
     def notted(self):
         return None, self.illegal_operation()
-
+    
     def execute(self):
         return RTResult().failure(self.illegal_operation())
 
@@ -148,6 +152,8 @@ class Value:
         )
 
 class Number(Value):
+    __class__ = "<type 'Number'>"
+
     def __init__(self, value):
         super().__init__()
         self.value = value
@@ -250,6 +256,12 @@ class Number(Value):
         else:
             return None, Value.illegal_operation(self, other)
 
+    def concat(self, other):
+        if isinstance(other, Number):
+            return Number(str(self.value) + str(other.value)), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
     def notted(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
@@ -274,13 +286,19 @@ Number.true = Number(1)
 Number.math_PI = Number(math.pi)
 
 class String(Value):
+    __class__ = "<type 'String'>"
+
     def __init__(self, value):
         super().__init__()
         self.value = value
 
     def added_to(self, other):
-        if isinstance(other, String):
-            return String(self.value + other.value).set_context(self.context), None
+        if isinstance(other, String | Number):
+            if isinstance(other, Number):
+                value = str(other.value)
+            else:
+                value = other.value
+            return String(self.value + value).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
@@ -289,6 +307,9 @@ class String(Value):
             return String(self.value * other.value).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
+
+    def concat(self, other):
+        return self.added_to(other)
 
     def is_true(self):
         return len(self.value) > 0
@@ -306,6 +327,8 @@ class String(Value):
         return f'"{self.value}"'
 
 class List(Value):
+    __class__ = "<type 'List'>"
+
     def __init__(self, elements):
         super().__init__()
         self.elements = elements
@@ -331,6 +354,15 @@ class List(Value):
             return None, Value.illegal_operation(self, other)
 
     def multed_by(self, other):
+        if isinstance(other, Number):
+            new_list = self.copy()
+            for val in new_list.elements:
+                val.value = val.value * other.value
+            return new_list, None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def concat(self, other):
         if isinstance(other, List):
             new_list = self.copy()
             new_list.elements.extend(other.elements)
@@ -364,6 +396,8 @@ class List(Value):
         return f'[{", ".join([repr(x) for x in self.elements])}]'
 
 class BaseFunction(Value):
+    __class__ = "<type 'Function'>"
+
     def __init__(self, name):
         super().__init__()
         self.name = name or "<anonymous>"
@@ -645,6 +679,20 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number(number.value * -1) if number.value < 0 else number)
     execute_abs.arg_names = ['number']
 
+    def execute_typeof(self, exec_ctx):
+        val = exec_ctx.symbol_table.get('val')
+
+        if not isinstance(val, Value):
+            return RTResult().failure(RTError(
+                self.pos_start, self.pos_end,
+                "Argument must be a Value",
+                exec_ctx
+            ))
+
+
+        return RTResult().success(String(val.__class__))
+    execute_typeof.arg_names = ['val']
+
 
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.print_ret   = BuiltInFunction("print_ret")
@@ -661,6 +709,7 @@ BuiltInFunction.extend      = BuiltInFunction("extend")
 BuiltInFunction.len         = BuiltInFunction("len")
 BuiltInFunction.run         = BuiltInFunction("run")
 BuiltInFunction.abs         = BuiltInFunction("abs")
+BuiltInFunction.typeof      = BuiltInFunction("typeof")
 
 def run(fn, text):
     # Generate tokens
@@ -795,6 +844,8 @@ class Interpreter:
             result, error = left.powed_by(right)
         elif node.op_tok.type == TT_COLON:
             result, error = left.get_val(right)
+        elif node.op_tok.type == TT_CONCAT:
+            result, error = left.concat(right)
         elif node.op_tok.type == TT_UNION:
             result, error = left.union(right)
         elif node.op_tok.type == TT_EE:
@@ -979,8 +1030,8 @@ class Interpreter:
 
 global_symbol_table = SymbolTable()
 global_symbol_table.set("NULL", Number.null)
-global_symbol_table.set("false", Number.false)
-global_symbol_table.set("true", Number.true)
+global_symbol_table.set("False", Number.false)
+global_symbol_table.set("True", Number.true)
 global_symbol_table.set("MATH_PI", Number.math_PI)
 global_symbol_table.set("print", BuiltInFunction.print)
 global_symbol_table.set("print_ret", BuiltInFunction.print_ret)
@@ -998,3 +1049,4 @@ global_symbol_table.set("extend", BuiltInFunction.extend)
 global_symbol_table.set("len", BuiltInFunction.len)
 global_symbol_table.set("run", BuiltInFunction.run)
 global_symbol_table.set("abs", BuiltInFunction.abs)
+global_symbol_table.set("typeof", BuiltInFunction.typeof)

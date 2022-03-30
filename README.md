@@ -5,6 +5,7 @@ An interpreted language written in python
 - [x] Add 'RETURN', 'BREAK', and 'CONTINUE' keywords
 - [x] Add modulus (`%`) operator 
 - [x] Add absolute value function
-- [ ] Add proper list operators [**_Work in progress_**]
+- [x] Add proper list operators
+- [ ] Add an import statement
 - [ ] Add more built-in functions and variables 
 - [ ] Add more complex data structures

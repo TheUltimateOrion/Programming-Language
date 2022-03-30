@@ -22,6 +22,7 @@ TT_RPAREN       = 'RPAREN'
 TT_LSQUARE      = 'LSQUARE'
 TT_RSQUARE      = 'RSQUARE'
 TT_COLON        = 'COLON'
+TT_CONCAT       = 'CONCAT'
 TT_UNION        = 'UNION'
 TT_EE           = 'EE'
 TT_NE           = 'NE'
@@ -51,7 +52,7 @@ KEYWORDS = [
     'END',
     'RETURN',
     'CONTINUE',
-    'BREAK',
+    'BREAK'
 ]
 
 ########################################
@@ -121,8 +122,8 @@ class Lexer:
         while self.current_char != None:
             if self.current_char in ' \t':
                 self.advance()
-            elif self.current_char == '#':
-                self.skip_comment()
+            elif self.current_char == '/':
+                self.make_comment()
             elif self.current_char in ';\n':
                 tokens.append(Token(TT_NEWLINE, pos_start=self.pos))
                 self.advance()
@@ -163,8 +164,7 @@ class Lexer:
                 tokens.append(Token(TT_RSQUARE, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ':':
-                tokens.append(Token(TT_COLON, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_colon())
             elif self.current_char == '|':
                 tokens.append(Token(TT_UNION, pos_start=self.pos))
                 self.advance()
@@ -241,7 +241,10 @@ class Lexer:
             id_str += self.current_char
             self.advance()
 
-        tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_IDENTIFIER
+        if id_str in KEYWORDS:
+            tok_type = TT_KEYWORD
+        else: 
+            tok_type = TT_IDENTIFIER
         return Token(tok_type, id_str, pos_start, self.pos)
 
     def make_not_equals(self):
@@ -290,6 +293,25 @@ class Lexer:
             tok_type = TT_GTE
 
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+
+    def make_colon(self):
+        tok_type = TT_COLON
+        pos_start = self.pos.copy()
+        self.advance()
+
+        if self.current_char == ':':
+            self.advance()
+            tok_type = TT_CONCAT
+        
+        return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+
+    def make_comment(self):
+        self.advance()
+
+        if self.current_char == '/':
+            self.skip_comment()
+        else:
+            pass
 
     def skip_comment(self):
         self.advance()
