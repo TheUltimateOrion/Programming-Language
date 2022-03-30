@@ -1,30 +1,8 @@
 // This is a very useful piece of software
 
+import "std"
+
 func oopify(prefix) => prefix + "oop"
-
-func join(elements, separator)
-	dim result = ""
-	dim LEN = len(elements)
-
-	for i = 0 to LEN then
-		dim result = result + elements : i
-		if i != LEN - 1 then
-			dim result = result + separator
-		end
-	end
-
-	return result
-end
-
-func map(elements, _func)
-	dim new_elements = []
-
-	for i = 0 to len(elements) then
-		append(new_elements, _func(elements : i))
-	end
-
-	return new_elements
-end
 
 print("Hello World!");
 

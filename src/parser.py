@@ -3,7 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from lexer import TT_ARROW, TT_COLON, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION
+from lexer import TT_ARROW, TT_COLON, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION
 
 
 class NumberNode:
@@ -854,6 +854,15 @@ class Parser:
                 True
             ))
 
+        if self.current_tok.type != TT_LBRACE:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected '{'"
+                ))
+
+        res.register_advancement()
+        self.advance() 
+
         if self.current_tok.type != TT_NEWLINE:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
@@ -866,10 +875,10 @@ class Parser:
         body = res.register(self.statements())
         if res.error: return res
 
-        if not self.current_tok.matches(TT_KEYWORD, 'end'):
+        if self.current_tok.type != TT_RBRACE:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                f"Expected 'end'"
+                "Expected '}'"
             ))
 
         res.register_advancement()
@@ -898,7 +907,7 @@ class Parser:
         if self.current_tok.type != TT_STRING:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected identifier"
+                "Expected import name"
             ))
 
         import_name = res.register(self.atom())

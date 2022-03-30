@@ -19,6 +19,8 @@ TT_MOD          = 'MOD'
 TT_EQ           = 'EQ'
 TT_LPAREN       = 'LPAREN'
 TT_RPAREN       = 'RPAREN'
+TT_LBRACE       = 'LBRACE'
+TT_RBRACE       = 'RBRACE'
 TT_LSQUARE      = 'LSQUARE'
 TT_RSQUARE      = 'RSQUARE'
 TT_COLON        = 'COLON'
@@ -157,6 +159,12 @@ class Lexer:
                 self.advance()
             elif self.current_char == ')':
                 tokens.append(Token(TT_RPAREN, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '{':
+                tokens.append(Token(TT_LBRACE, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '}':
+                tokens.append(Token(TT_RBRACE, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '[':
                 tokens.append(Token(TT_LSQUARE, pos_start=self.pos))

@@ -325,7 +325,7 @@ class String(Value):
         return self.value
 
     def __repr__(self):
-        return f'"{self.value}"'
+        return f'\'{self.value}\''
 
 class List(Value):
     __class__ = "<type 'List'>"
@@ -737,7 +737,7 @@ class Import:
                 self.context
             )
 
-        fn = fn.value
+        fn = fn.value + ".my"
 
         if not Path(fn).exists():
             return None, RTError(

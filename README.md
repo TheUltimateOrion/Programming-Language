@@ -6,6 +6,6 @@ An interpreted language written in python
 - [x] Add modulus (`%`) operator 
 - [x] Add absolute value function
 - [x] Add proper list operators
-- [ ] Add an import statement
-- [ ] Add more built-in functions and variables 
-- [ ] Add more complex data structures
+- [x] Add an import statement
+- [ ] Add more built-in functions and variables [**_Work In Progress_**]
+- [ ] Add dictionary data type
