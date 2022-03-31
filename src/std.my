@@ -3,9 +3,9 @@ func join(elements, separator) {
 	dim LEN = len(elements)
 
 	for i = 0 to LEN then
-		dim result = result + elements[i]
+		result = result + elements[i]
 		if i != LEN - 1 then
-			dim result = result + separator
+			result = result + separator
 		end
 	end
 
