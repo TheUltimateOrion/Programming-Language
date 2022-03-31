@@ -790,6 +790,14 @@ class Interpreter:
         value = res.register(self.visit(node.value_node, context))
         if res.should_return(): return res
 
+        if node.reassign:
+            if not context.symbol_table.get(var_name):
+                return res.failure(RTError(
+                    node.pos_start, node.pos_end,
+                    f"'{var_name}' is not defined",
+                    context
+                ))
+
         context.symbol_table.set(var_name, value)
         return res.success(value)
 
