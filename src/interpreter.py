@@ -1082,9 +1082,6 @@ class Interpreter:
 ########################################
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("null", Number.null)
-global_symbol_table.set("false", Number.false)
-global_symbol_table.set("true", Number.true)
 global_symbol_table.set("MATH_PI", Number.math_PI)
 global_symbol_table.set("MATH_POS_INF", Number.math_POS_INF)
 global_symbol_table.set("MATH_NEG_INF", Number.math_NEG_INF)

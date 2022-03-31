@@ -54,7 +54,10 @@ KEYWORDS = [
     'ret',
     'continue',
     'break',
-    'import'
+    'import',
+    'true',
+    'false',
+    'null'
 ]
 
 ########################################

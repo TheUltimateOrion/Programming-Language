@@ -3,7 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from lexer import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION
+from lexer import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
 
 
 class NumberNode:
@@ -504,6 +504,18 @@ class Parser:
             import_expr = res.register(self.import_expr())
             if res.error: return res
             return res.success(import_expr)
+        elif tok.matches(TT_KEYWORD, 'true'):
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(Token(TT_INT, 1, self.current_tok.pos_start)))
+        elif tok.matches(TT_KEYWORD, 'false'):
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(Token(TT_INT, 0, self.current_tok.pos_start)))
+        elif tok.matches(TT_KEYWORD, 'null'):
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(Token(TT_INT, 0, self.current_tok.pos_start)))
 
         return res.failure(InvalidSyntaxError(
             tok.pos_start, tok.pos_end,
