@@ -840,6 +840,13 @@ class Interpreter:
         value = res.register(self.visit(node.value_node, context))
         if res.should_return(): return res
 
+        if isinstance(context.symbol_table.get(var_name), BuiltInFunction):
+            return res.failure(RTError(
+                node.pos_start, node.pos_end,
+                f"Cannot redeclare a built-in function: {var_name}",
+                context
+            ))
+
         if node.reassign:
             if not context.symbol_table.get(var_name):
                 return res.failure(RTError(
@@ -847,7 +854,7 @@ class Interpreter:
                     f"'{var_name}' is not defined",
                     context
                 ))
-
+    
         context.symbol_table.set(var_name, value)
         return res.success(value)
 
@@ -1014,6 +1021,13 @@ class Interpreter:
         arg_names = [arg_name.value for arg_name in node.arg_name_toks]
         func_value = Function(func_name, body_node, arg_names, node.should_auto_return).set_context(context).set_pos(node.pos_start, node.pos_end)
 
+        if isinstance(context.symbol_table.get(func_name), BuiltInFunction):
+            return res.failure(RTError(
+                node.var_name_tok.pos_start, node.var_name_tok.pos_end,
+                f"Cannot delete a built-in function",
+                context
+            ))
+
         if node.var_name_tok:
             context.symbol_table.set(func_name, func_value)
 
@@ -1121,6 +1135,29 @@ class Interpreter:
 
     def visit_BreakNode(self, node, context):
         return RTResult().success_break()
+
+    def visit_DeleteNode(self, node, context):
+        res = RTResult()
+        var_name = node.var_name.var_name_tok
+        val = res.register(self.visit(node.var_name, context))
+        if res.should_return(): return res
+
+        if isinstance(val, BuiltInFunction):
+            return res.failure(RTError(
+                val.pos_start, val.pos_end,
+                f"Cannot delete a built-in function",
+                context
+            ))
+
+        if not context.symbol_table.get(var_name.value):
+            return res.failure(RTError(
+                var_name.pos_start, node.pos_end,
+                f"'{var_name.value}' is not defined",
+                context
+            ))
+
+        context.symbol_table.remove(var_name.value)
+        return res.success(Number.null)
 
 ########################################
 # RUN

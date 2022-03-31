@@ -168,6 +168,12 @@ class BreakNode:
         self.pos_start = pos_start
         self.pos_end = pos_end
 
+class DeleteNode:
+    def __init__(self, var_name, pos_start, pos_end):
+        self.var_name = var_name
+
+        self.pos_start = pos_start
+        self.pos_end = pos_end
 ########################################
 # PARSE RESULT
 ########################################
@@ -234,7 +240,7 @@ class Parser:
         if not res.error and self.current_tok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Multiple errors with token"
+                "Multiple errors"
             ))
         return res
 
@@ -300,6 +306,29 @@ class Parser:
             res.register_advancement()
             self.advance()
             return res.success(BreakNode(pos_start, self.current_tok.pos_start.copy()))
+        
+        if self.current_tok.matches(TT_KEYWORD, 'import'):
+            import_expr = res.register(self.import_expr())
+            if res.error: return res
+            return res.success(import_expr)
+        
+        if self.current_tok.matches(TT_KEYWORD, 'delete'):
+            res.register_advancement()
+            self.advance()
+
+            if self.current_tok.type != TT_IDENTIFIER:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected identifier"
+                ))
+            var_name = res.register(self.atom())
+            if res.error: return res
+            # var_name = self.current_tok
+            
+            # res.register_advancement()
+            # self.advance()
+
+            return res.success(DeleteNode(var_name, pos_start, self.current_tok.pos_start.copy()))
 
         expr = res.register(self.expr())
         if res.error:
@@ -359,6 +388,18 @@ class Parser:
             node = res.register(self.comp_expr())
             if res.error: return res
             return res.success(UnaryOpNode(op_tok, node))
+        elif self.current_tok.matches(TT_KEYWORD, 'true'):
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(Token(TT_INT, 1, self.current_tok.pos_start)))
+        elif self.current_tok.matches(TT_KEYWORD, 'false'):
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(Token(TT_INT, 0, self.current_tok.pos_start)))
+        elif self.current_tok.matches(TT_KEYWORD, 'null'):
+            res.register_advancement()
+            self.advance()
+            return res.success(NumberNode(Token(TT_INT, 0, self.current_tok.pos_start)))
 
         node = res.register(self.bin_op(self.arith_expr, (TT_EE, TT_NE, TT_LT, TT_GT, TT_LTE, TT_GTE)))
 
@@ -530,23 +571,6 @@ class Parser:
             func_def = res.register(self.func_def())
             if res.error: return res
             return res.success(func_def)
-
-        elif tok.matches(TT_KEYWORD, 'import'):
-            import_expr = res.register(self.import_expr())
-            if res.error: return res
-            return res.success(import_expr)
-        elif tok.matches(TT_KEYWORD, 'true'):
-            res.register_advancement()
-            self.advance()
-            return res.success(NumberNode(Token(TT_INT, 1, self.current_tok.pos_start)))
-        elif tok.matches(TT_KEYWORD, 'false'):
-            res.register_advancement()
-            self.advance()
-            return res.success(NumberNode(Token(TT_INT, 0, self.current_tok.pos_start)))
-        elif tok.matches(TT_KEYWORD, 'null'):
-            res.register_advancement()
-            self.advance()
-            return res.success(NumberNode(Token(TT_INT, 0, self.current_tok.pos_start)))
 
         return res.failure(InvalidSyntaxError(
             tok.pos_start, tok.pos_end,
