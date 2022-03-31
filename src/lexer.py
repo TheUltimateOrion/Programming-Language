@@ -1,8 +1,18 @@
 ########################################
+# CONSTANTS
+########################################
+
+import string
+
+
+DIGITS = '0123456789'
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
+
+########################################
 # TOKENS
 ########################################
 
-from constants import DIGITS, LETTERS_DIGITS, LETTERS
 from errors import ExpectedCharError, IllegalCharError
 
 TT_INT          = 'INT'
