@@ -23,7 +23,6 @@ TT_LBRACE       = 'LBRACE'
 TT_RBRACE       = 'RBRACE'
 TT_LSQUARE      = 'LSQUARE'
 TT_RSQUARE      = 'RSQUARE'
-TT_COLON        = 'COLON'
 TT_CONCAT       = 'CONCAT'
 TT_UNION        = 'UNION'
 TT_EE           = 'EE'
@@ -52,7 +51,7 @@ KEYWORDS = [
     'func',
     'then',
     'end',
-    'return',
+    'ret',
     'continue',
     'break',
     'import'
@@ -125,8 +124,6 @@ class Lexer:
         while self.current_char != None:
             if self.current_char in ' \t':
                 self.advance()
-            elif self.current_char == '/':
-                self.make_comment()
             elif self.current_char in ';\n':
                 tokens.append(Token(TT_NEWLINE, pos_start=self.pos))
                 self.advance()
@@ -146,8 +143,8 @@ class Lexer:
                 tokens.append(Token(TT_MUL, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '/':
-                tokens.append(Token(TT_DIV, pos_start=self.pos))
-                self.advance()
+                tok = self.make_divide()
+                if tok: self.make_divide()
             elif self.current_char == '%':
                 tokens.append(Token(TT_MOD, pos_start=self.pos))
                 self.advance()
@@ -173,7 +170,9 @@ class Lexer:
                 tokens.append(Token(TT_RSQUARE, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ':':
-                tokens.append(self.make_colon())
+                token, error = self.make_colon()
+                if error: return [], error
+                tokens.append(token)
             elif self.current_char == '|':
                 tokens.append(Token(TT_UNION, pos_start=self.pos))
                 self.advance()
@@ -224,20 +223,20 @@ class Lexer:
 
         escape_characters = {
             'n': '\n',
-            't': '\t',
-            '\\': '\\\\'
+            't': '\t'
         }
 
         while self.current_char != None and (self.current_char != '"' or escape_character):
             if escape_character:
                 string += escape_characters.get(self.current_char, self.current_char)
+                escape_character = False
             else:
                 if self.current_char == '\\':
                     escape_character = True
                 else:
                     string += self.current_char
+                    escape_character = False
             self.advance()
-            escape_character = False
 
         self.advance()
         return Token(TT_STRING, string, pos_start, self.pos)
@@ -250,10 +249,7 @@ class Lexer:
             id_str += self.current_char
             self.advance()
 
-        if id_str in KEYWORDS:
-            tok_type = TT_KEYWORD
-        else: 
-            tok_type = TT_IDENTIFIER
+        tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_IDENTIFIER
         return Token(tok_type, id_str, pos_start, self.pos)
 
     def make_not_equals(self):
@@ -304,23 +300,23 @@ class Lexer:
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
     def make_colon(self):
-        tok_type = TT_COLON
         pos_start = self.pos.copy()
         self.advance()
 
         if self.current_char == ':':
             self.advance()
-            tok_type = TT_CONCAT
+            return Token(TT_CONCAT, pos_start=pos_start, pos_end=self.pos), None
         
-        return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+        self.advance()
+        return None, ExpectedCharError(pos_start, self.pos, "':' (after ':')")
 
-    def make_comment(self):
+    def make_divide(self):
         self.advance()
 
         if self.current_char == '/':
             self.skip_comment()
         else:
-            pass
+            return Token(TT_DIV, pos_start=self.pos)
 
     def skip_comment(self):
         self.advance()

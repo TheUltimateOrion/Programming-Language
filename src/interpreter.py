@@ -6,7 +6,7 @@ import math
 import os
 from pathlib import Path
 from errors import RTError
-from lexer import TT_COLON, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
+from lexer import TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
 from parser import Parser
 
 
@@ -97,9 +97,6 @@ class Value:
         return None, self.illegal_operation(other)
 
     def powed_by(self, other):
-        return None, self.illegal_operation(other)
-    
-    def get_val(self, other):
         return None, self.illegal_operation(other)
 
     def union(self, other):
@@ -258,7 +255,7 @@ class Number(Value):
             return None, Value.illegal_operation(self, other)
 
     def concat(self, other):
-        if isinstance(other, Number):
+        if isinstance(other, Number | String):
             return Number(str(self.value) + str(other.value)), None
         else:
             return None, Value.illegal_operation(self, other)
@@ -280,11 +277,6 @@ class Number(Value):
 
     def __repr__(self):
         return str(self.value)
-
-Number.null = Number(0)
-Number.false = Number(0)
-Number.true = Number(1)
-Number.math_PI = Number(math.pi)
 
 class String(Value):
     __class__ = "<type 'String'>"
@@ -368,19 +360,6 @@ class List(Value):
             new_list = self.copy()
             new_list.elements.extend(other.elements)
             return new_list, None
-        else:
-            return None, Value.illegal_operation(self, other)
-
-    def get_val(self, other):
-        if isinstance(other, Number):
-            try:
-                return self.elements[other.value], None
-            except:
-                return None, RTError(
-                    other.pos_start, other.pos_end,
-                    'Element at this index could not be retrieved from list because index is out of bounds',
-                    self.context
-                )
         else:
             return None, Value.illegal_operation(self, other)
 
@@ -711,6 +690,13 @@ BuiltInFunction.len         = BuiltInFunction("len")
 BuiltInFunction.run         = BuiltInFunction("run")
 BuiltInFunction.abs         = BuiltInFunction("abs")
 BuiltInFunction.typeof      = BuiltInFunction("typeof")
+    
+Number.null = Number(0)
+Number.false = Number(0)
+Number.true = Number(1)
+Number.math_PI = Number(math.pi)
+Number.math_POS_INF = Number(float("inf"))
+Number.math_NEG_INF = Number(-1 * float("inf"))
 
 class Import:
     def __init__(self, import_name):
@@ -877,8 +863,6 @@ class Interpreter:
             result, error = left.modded_by(right)
         elif node.op_tok.type == TT_POW:
             result, error = left.powed_by(right)
-        elif node.op_tok.type == TT_COLON:
-            result, error = left.get_val(right)
         elif node.op_tok.type == TT_CONCAT:
             result, error = left.concat(right)
         elif node.op_tok.type == TT_UNION:
@@ -1037,6 +1021,28 @@ class Interpreter:
 
         return res.success(Number.null)
 
+    def visit_ArrAccessNode(self, node, context):
+        res = RTResult()
+        arr = res.register(self.visit(node.arr, context))
+        if res.should_return(): return res
+        arr = arr.copy().set_pos(node.pos_start, node.pos_end)
+
+        index = res.register(self.visit(node.index, context))
+        if res.should_return(): return res
+        index = index.copy().set_pos(node.pos_start, node.pos_end)
+
+        if isinstance(index, Number):
+            try:
+                value = arr.elements[index.value]
+            except:
+                return res.failure(RTError(
+                    index.pos_start, index.pos_end,
+                    'Element at this index could not be retrieved from list because index is out of bounds',
+                    context
+                ))
+
+        return res.success(value)
+
     def visit_CallNode(self, node, context):
         res = RTResult()
         args = []
@@ -1076,10 +1082,12 @@ class Interpreter:
 ########################################
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("NULL", Number.null)
-global_symbol_table.set("False", Number.false)
-global_symbol_table.set("True", Number.true)
+global_symbol_table.set("null", Number.null)
+global_symbol_table.set("false", Number.false)
+global_symbol_table.set("true", Number.true)
 global_symbol_table.set("MATH_PI", Number.math_PI)
+global_symbol_table.set("MATH_POS_INF", Number.math_POS_INF)
+global_symbol_table.set("MATH_NEG_INF", Number.math_NEG_INF)
 global_symbol_table.set("print", BuiltInFunction.print)
 global_symbol_table.set("print_ret", BuiltInFunction.print_ret)
 global_symbol_table.set("input", BuiltInFunction.input)
@@ -1108,7 +1116,7 @@ def run(fn, text):
     parser = Parser(tokens)
     ast = parser.parse()
     if ast.error: return None, ast.error
-
+    
     # Run program
     interpreter = Interpreter()
     context = Context('<program>')

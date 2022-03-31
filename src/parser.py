@@ -3,7 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from lexer import TT_ARROW, TT_COLON, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION
+from lexer import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION
 
 
 class NumberNode:
@@ -117,10 +117,10 @@ class FuncDefNode:
         self.pos_end = self.body_node.pos_end
 
 class ImportNode:
-    def __init__(self, import_name, pos_start, pos_end):
+    def __init__(self, import_name, pos_start):
         self.import_name = import_name
         self.pos_start = pos_start
-        self.pos_end = pos_end
+        self.pos_end = import_name.pos_end
 
 class CallNode:
     def __init__(self, node_to_call, arg_nodes):
@@ -133,6 +133,14 @@ class CallNode:
             self.pos_end = self.arg_nodes[len(self.arg_nodes) - 1].pos_end
         else:
             self.pos_end = self.node_to_call.pos_end
+
+class ArrAccessNode:
+    def __init__(self, arr, index):
+        self.arr = arr
+        self.index = index
+
+        self.pos_start = self.arr.pos_start
+        self.pos_end = self.index.pos_end
 
 class ReturnNode:
     def __init__(self, node_to_return, pos_start, pos_end):
@@ -265,7 +273,7 @@ class Parser:
         res = ParseResult()
         pos_start = self.current_tok.pos_start.copy()
             
-        if self.current_tok.matches(TT_KEYWORD, 'return'):
+        if self.current_tok.matches(TT_KEYWORD, 'ret'):
             res.register_advancement()
             self.advance()
 
@@ -288,7 +296,7 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected 'return', 'continue', 'break', 'dim', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                "Expected 'ret', 'continue', 'break', 'dim', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
             ))
         return res.success(expr)
 
@@ -352,12 +360,12 @@ class Parser:
             ))
 
         return res.success(node)
-    
+
     def arith_expr(self):
         return self.bin_op(self.term, (TT_PLUS, TT_MINUS, TT_UNION))
 
     def term(self):
-        return self.bin_op(self.factor, (TT_MUL, TT_DIV, TT_COLON, TT_CONCAT, TT_MOD))
+        return self.bin_op(self.factor, (TT_MUL, TT_DIV, TT_CONCAT, TT_MOD))
 
     def factor(self):
         res = ParseResult()
@@ -412,6 +420,25 @@ class Parser:
                 res.register_advancement()
                 self.advance()
             return res.success(CallNode(atom, arg_nodes))
+        if self.current_tok.type == TT_LSQUARE:
+            res.register_advancement()
+            self.advance()
+            index = res.register(self.expr())
+            if res.error:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected ']', 'dim', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                ))
+
+            if self.current_tok.type != TT_RSQUARE:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    f"Expected ']'"
+                ))
+
+            res.register_advancement()
+            self.advance()
+            return res.success(ArrAccessNode(atom, index))
         return res.success(atom)
 
     def atom(self):
@@ -866,7 +893,7 @@ class Parser:
         if self.current_tok.type != TT_NEWLINE:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                f"Expected '=>' or NEWLINE"
+                f"Expected '=>' or a newline"
             ))
 
         res.register_advancement()
@@ -874,7 +901,7 @@ class Parser:
 
         body = res.register(self.statements())
         if res.error: return res
-
+        
         if self.current_tok.type != TT_RBRACE:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
@@ -912,7 +939,7 @@ class Parser:
 
         import_name = res.register(self.atom())
 
-        return res.success(ImportNode(import_name, pos_start, self.current_tok.pos_end))
+        return res.success(ImportNode(import_name, pos_start))
 
 ########################################
 
@@ -924,6 +951,7 @@ class Parser:
         left = res.register(func_a())
         if res.error: return res
 
+        
         while self.current_tok.type in ops or (self.current_tok.type, self.current_tok.value) in ops:
             op_tok = self.current_tok
             res.register_advancement()

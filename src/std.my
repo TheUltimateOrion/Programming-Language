@@ -3,23 +3,23 @@ func join(elements, separator) {
 	dim LEN = len(elements)
 
 	for i = 0 to LEN then
-		dim result = result + elements : i
+		dim result = result + elements[i]
 		if i != LEN - 1 then
 			dim result = result + separator
 		end
 	end
 
-	return result
+	ret result
 }
 
 func map(elements, _func) {
 	dim new_elements = []
 
 	for i = 0 to len(elements) then
-		append(new_elements, _func(elements : i))
+		append(new_elements, _func(elements[i]))
 	end
 
-	return new_elements
+	ret new_elements
 }
 
 func concat(str1, str2) => str1::str2
