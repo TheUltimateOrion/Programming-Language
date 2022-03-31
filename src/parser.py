@@ -3,7 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from lexer import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
+from lexer import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
 
 
 class NumberNode:
@@ -27,6 +27,13 @@ class StringNode:
         return f'{self.tok}'
 
 class ListNode:
+    def __init__(self, element_nodes, pos_start, pos_end):
+        self.element_nodes = element_nodes
+
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+
+class DictNode:
     def __init__(self, element_nodes, pos_start, pos_end):
         self.element_nodes = element_nodes
 
@@ -387,7 +394,7 @@ class Parser:
 
     def call(self):
         res = ParseResult()
-        atom = res.register(self.atom())
+        access_expr = res.register(self.access_expr())
         if res.error: return res
 
         if self.current_tok.type == TT_LPAREN:
@@ -421,10 +428,16 @@ class Parser:
 
                 res.register_advancement()
                 self.advance()
-            return res.success(CallNode(atom, arg_nodes))
+            return res.success(CallNode(access_expr, arg_nodes))
+        return res.success(access_expr)
+
+    def access_expr(self):
+        res = ParseResult()
+        atom = res.register(self.atom())
+
         if self.current_tok.type == TT_LSQUARE:
             res.register_advancement()
-            self.advance()
+            self.advance()            
             index = res.register(self.expr())
             if res.error:
                 return res.failure(InvalidSyntaxError(
@@ -487,6 +500,11 @@ class Parser:
             list_expr = res.register(self.list_expr())
             if res.error: return res
             return res.success(list_expr)
+
+        elif tok.type == TT_LBRACE:
+            dict_expr = res.register(self.dict_expr())
+            if res.error: return res
+            return res.success(dict_expr)
 
         elif tok.matches(TT_KEYWORD, 'if'):
             if_expr = res.register(self.if_expr())
@@ -575,8 +593,101 @@ class Parser:
 
             res.register_advancement()
             self.advance()
-
+        
         return res.success(ListNode(
+            element_nodes,
+            pos_start,
+            self.current_tok.pos_end.copy()
+        ))
+
+    def dict_expr(self):
+        res = ParseResult()
+        element_nodes = {}
+        pos_start = self.current_tok.pos_start.copy()
+
+        if self.current_tok.type != TT_LBRACE:
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                f"Expected '['"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type == TT_RBRACE:
+            res.register_advancement()
+            self.advance()
+        else:
+            if self.current_tok.type != TT_STRING:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Expected '}', or string"
+                    ))
+            key_name = res.register(self.atom())
+            if res.error:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected string"
+                ))
+            
+            if self.current_tok.type != TT_KEY:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected ':'"
+                ))
+
+            res.register_advancement()
+            self.advance()
+
+            expr = res.register(self.expr())
+            if res.error:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected '}', 'dim', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[', '{' or 'not'"
+                ))
+
+            element_nodes.update({key_name: expr})
+            
+            while self.current_tok.type == TT_COMMA:
+                res.register_advancement()
+                self.advance()
+
+                if self.current_tok.type != TT_STRING:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Expected '}', or string"
+                    ))
+                key_name = res.register(self.atom())
+                if res.error:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Expected string"
+                    ))
+            
+                if self.current_tok.type != TT_KEY:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Expected ':'"
+                    ))
+
+                res.register_advancement()
+                self.advance()
+
+                expr = res.register(self.expr())
+
+                element_nodes.update({key_name: expr})
+                if res.error: return res
+
+            if self.current_tok.type != TT_RBRACE:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    f"Expected ',' or ']'"
+                ))
+
+            res.register_advancement()
+            self.advance()
+
+        return res.success(DictNode(
             element_nodes,
             pos_start,
             self.current_tok.pos_end.copy()
@@ -810,7 +921,6 @@ class Parser:
                     self.current_tok.pos_start, self.current_tok.pos_end,
                     "Expected '}'"
                 ))
-            print(self.current_tok)
             
         res.register_advancement()
         self.advance()

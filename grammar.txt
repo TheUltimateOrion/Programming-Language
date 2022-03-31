@@ -20,7 +20,9 @@ factor     : (PLUS|MINUS) factor
 
 power      : call (POW factor)*
 
-call       : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
+call       : access-expr (LPAREN (expr (COMMA expr)*)? RPAREN)?
+
+access-expr: atom (LSQUARE expr RSQUARE)?
 
 atom       : INT|FLOAT|STRING|IDENTIFIER
            : LPAREN expre RPAREN

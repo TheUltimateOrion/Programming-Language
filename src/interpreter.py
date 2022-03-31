@@ -324,6 +324,39 @@ class List(Value):
     def __repr__(self):
         return f'[{", ".join([repr(x) for x in self.elements])}]'
 
+class Dict(Value):
+    __class__ = "<type 'Dict'>"
+
+    def __init__(self, elements, keys, values):
+        super().__init__()
+        self.elements = elements
+        self.keys = keys
+        self.values = values
+
+    def copy(self):
+        copy = Dict(self.elements, self.keys, self.values)
+        copy.set_pos(self.pos_start, self.pos_end)
+        copy.set_context(self.context)
+        return copy
+
+    def get_vals(self):
+        keys = self.keys
+        values = self.values
+        val = '{'
+        
+        for x in range(len(keys)):
+            val += f"'{keys[x]}': {values[x]}"
+            if x != len(keys) - 1:
+                val += ", "
+        val += '}'
+        return val
+
+    def __str__(self):
+        return self.get_vals()
+
+    def __repr__(self):
+        return self.get_vals()
+
 class BaseFunction(Value):
     __class__ = "<type 'Function'>"
 
@@ -456,7 +489,7 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number(number))
     execute_input_int.arg_names = []
 
-    def execute_clear(self, exec_ctx):
+    def execute_clear(self):
         os.system('cls' if os.name == 'nt' else 'clear')
         return RTResult().success(Number.null)
     execute_clear.arg_names = []
@@ -769,6 +802,23 @@ class Interpreter:
             List(elements).set_context(context).set_pos(node.pos_start, node.pos_end)
         )
 
+    def visit_DictNode(self, node, context):
+        res = RTResult()
+        elements = {}
+        keys = []
+        values = []
+
+        for element_node in node.element_nodes:
+            elements.update({res.register(self.visit(element_node, context)) : res.register(self.visit(node.element_nodes[element_node], context))})
+            keys.append(res.register(self.visit(element_node, context)))
+            if res.should_return(): return res
+            values.append(res.register(self.visit(node.element_nodes[element_node], context)))
+            if res.should_return(): return res
+
+        return res.success(
+            Dict(elements, keys,values).set_context(context).set_pos(node.pos_start, node.pos_end)
+        )
+
     def visit_VarAccessNode(self, node, context):
         res = RTResult()
         var_name = node.var_name_tok.value
@@ -973,7 +1023,7 @@ class Interpreter:
         res = RTResult()
 
         import_name = res.register(self.visit(node.import_name, context))
-        if res.error: return res
+        if res.should_return(): return res
         _import = Import(import_name).set_context(context).set_pos(node.pos_start, node.pos_end)
         _, error = _import.import_module()
 
@@ -984,20 +1034,19 @@ class Interpreter:
     def visit_ArrAccessNode(self, node, context):
         res = RTResult()
         arr = res.register(self.visit(node.arr, context))
-        if not isinstance(arr, List):
-                return res.failure(RTError(
-                    arr.pos_start, arr.pos_end,
-                    'Object is not subscriptable',
-                    context
-                ))
         if res.should_return(): return res
         arr = arr.copy().set_pos(node.pos_start, node.pos_end)
 
         index = res.register(self.visit(node.index, context))
         if res.should_return(): return res
-        index = index.copy().set_pos(node.pos_start, node.pos_end)
 
         if isinstance(index, Number):
+            if not isinstance(arr, List):
+                return res.failure(RTError(
+                    arr.pos_start, arr.pos_end,
+                    'Object is not a list',
+                    context
+                ))
             try:
                 value = arr.elements[index.value]
             except:
@@ -1006,10 +1055,28 @@ class Interpreter:
                     'Element at this index could not be retrieved from list because index is out of bounds',
                     context
                 ))
+        elif isinstance(index, String):
+            if not isinstance(arr, Dict):
+                return res.failure(RTError(
+                    arr.pos_start, arr.pos_end,
+                    'Object is not a dictionary',
+                    context
+                ))
+            value = None
+            for x in range(len(arr.elements.keys())):
+                if arr.keys[x].value == index.value:
+                    value = arr.values[x]
+
+            if value == None:
+                return res.failure(RTError(
+                    index.pos_start, index.pos_end,
+                    f"Not a valid key: '{index.value}'",
+                    context
+                ))
         else:
             return res.failure(RTError(
                     index.pos_start, index.pos_end,
-                    'Index is not a number',
+                    'Index is not a number or string',
                     context
                 ))
 

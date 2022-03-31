@@ -9,4 +9,6 @@ An interpreted language written in python
 - [x] Add an import statement
 - [x] Add more built-in functions and variables
 - [x] Implement a do-while loop
-- [ ] Add dictionary data type [**_Work In Progress_**]
+- [x] Add dictionary data type*
+
+\* = [**_Experimental_**]

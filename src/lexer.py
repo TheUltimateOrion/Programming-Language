@@ -33,6 +33,7 @@ TT_LBRACE       = 'LBRACE'
 TT_RBRACE       = 'RBRACE'
 TT_LSQUARE      = 'LSQUARE'
 TT_RSQUARE      = 'RSQUARE'
+TT_KEY          = 'KEY'
 TT_CONCAT       = 'CONCAT'
 TT_UNION        = 'UNION'
 TT_EE           = 'EE'
@@ -321,8 +322,7 @@ class Lexer:
             self.advance()
             return Token(TT_CONCAT, pos_start=pos_start, pos_end=self.pos), None
         
-        self.advance()
-        return None, ExpectedCharError(pos_start, self.pos, "':' (after ':')")
+        return Token(TT_KEY, pos_start=pos_start, pos_end=self.pos), None
 
     def make_divide(self):
         self.advance()
