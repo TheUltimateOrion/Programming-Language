@@ -67,7 +67,8 @@ KEYWORDS = [
     'import',
     'true',
     'false',
-    'null'
+    'null',
+    'do'
 ]
 
 ########################################
@@ -157,7 +158,7 @@ class Lexer:
                 self.advance()
             elif self.current_char == '/':
                 tok = self.make_divide()
-                if tok: self.make_divide()
+                if tok: tokens.append(tok)
             elif self.current_char == '%':
                 tokens.append(Token(TT_MOD, pos_start=self.pos))
                 self.advance()

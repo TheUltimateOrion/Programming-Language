@@ -7,5 +7,6 @@ An interpreted language written in python
 - [x] Add absolute value function
 - [x] Add proper list operators
 - [x] Add an import statement
-- [ ] Add more built-in functions and variables [**_Work In Progress_**]
+- [x] Add more built-in functions and variables
+- [x] Implement a do-while loop
 - [ ] Add dictionary data type

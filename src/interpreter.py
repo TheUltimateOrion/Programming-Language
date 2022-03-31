@@ -925,9 +925,10 @@ class Interpreter:
         while True:
             condition = res.register(self.visit(node.condition_node, context))
             if res.should_return(): return res
-
-            if not condition.is_true(): 
-                break
+            
+            if not node.is_do_while:
+                if not condition.is_true(): 
+                    break
 
             value = res.register(self.visit(node.body_node, context))
             if res.should_return() and res.loop_should_continue == False and res.loop_should_break == False: return res
@@ -939,6 +940,8 @@ class Interpreter:
                 break
 
             elements.append(value)
+            if not condition.is_true(): 
+                break
 
         return res.success(
             Number.null if node.should_return_null else
@@ -973,6 +976,12 @@ class Interpreter:
     def visit_ArrAccessNode(self, node, context):
         res = RTResult()
         arr = res.register(self.visit(node.arr, context))
+        if not isinstance(arr, List):
+                return res.failure(RTError(
+                    arr.pos_start, arr.pos_end,
+                    'Object is not subscriptable',
+                    context
+                ))
         if res.should_return(): return res
         arr = arr.copy().set_pos(node.pos_start, node.pos_end)
 
@@ -989,6 +998,12 @@ class Interpreter:
                     'Element at this index could not be retrieved from list because index is out of bounds',
                     context
                 ))
+        else:
+            return res.failure(RTError(
+                    index.pos_start, index.pos_end,
+                    'Index is not a number',
+                    context
+                ))
 
         return res.success(value)
 
@@ -998,6 +1013,12 @@ class Interpreter:
 
         value_to_call = res.register(self.visit(node.node_to_call, context))
         if res.should_return(): return res
+        if not isinstance(value_to_call, BaseFunction):
+            return res.failure(RTError(
+                value_to_call.pos_start, value_to_call.pos_end,
+                'Object is not callable',
+                context
+            ))
         value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
 
         for arg_node in node.arg_nodes:

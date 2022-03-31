@@ -92,13 +92,14 @@ class ForNode:
         self.pos_end = self.body_node.pos_end
 
 class WhileNode:
-    def __init__(self, condition_node, body_node, should_return_null):
+    def __init__(self, condition_node, body_node, should_return_null, is_do_while):
         self.condition_node = condition_node
         self.body_node = body_node
         self.should_return_null = should_return_null
 
         self.pos_start = self.condition_node.pos_start
         self.pos_end = self.body_node.pos_end
+        self.is_do_while = is_do_while
 
 class FuncDefNode:
     def __init__(self, var_name_tok, arg_name_toks, body_node, should_auto_return):
@@ -225,7 +226,7 @@ class Parser:
         if not res.error and self.current_tok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Token cannot appear after previous tokens"
+                "Multiple errors with token"
             ))
         return res
 
@@ -494,6 +495,11 @@ class Parser:
             while_expr = res.register(self.while_expr())
             if res.error: return res
             return res.success(while_expr)
+
+        elif tok.matches(TT_KEYWORD, 'do'):
+            do_while_expr = res.register(self.do_while_expr())
+            if res.error: return res
+            return res.success(do_while_expr)
 
         elif tok.matches(TT_KEYWORD, 'func'):
             func_def = res.register(self.func_def())
@@ -764,6 +770,57 @@ class Parser:
         if res.error: return res
 
         return res.success(ForNode(var_name, start_value, end_value, step_value, body, False))
+    
+    def do_while_expr(self):
+        res = ParseResult()
+        if not self.current_tok.matches(TT_KEYWORD, 'do'):
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                f"Expected 'do'"
+            )) 
+        
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type != TT_LBRACE:
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                "Expected '{'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type == TT_NEWLINE:
+            res.register_advancement()
+            self.advance()
+
+            body = res.register(self.statements())
+            if res.error: return res
+
+            if self.current_tok.type != TT_RBRACE:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected '}'"
+                ))
+            print(self.current_tok)
+            
+        res.register_advancement()
+        self.advance()
+
+        if not self.current_tok.matches(TT_KEYWORD, 'while'):
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                f"Expected 'while'"
+            ))
+        
+        res.register_advancement()
+        self.advance()
+            
+        condition = res.register(self.expr())
+        if res.error: return res
+
+        return res.success(WhileNode(condition, body, True, True))
 
     def while_expr(self):
         res = ParseResult()
@@ -776,7 +833,7 @@ class Parser:
 
         res.register_advancement()
         self.advance()
-
+            
         condition = res.register(self.expr())
         if res.error: return res
 
@@ -805,12 +862,12 @@ class Parser:
             res.register_advancement()
             self.advance()
 
-            return res.success(WhileNode(condition, body, True))
+            return res.success(WhileNode(condition, body, True, False))
 
         body = res.register(self.statement())
         if res.error: return res
 
-        return res.success(WhileNode(condition, body, False))
+        return res.success(WhileNode(condition, body, False, False))
 
     def func_def(self):
         res = ParseResult()

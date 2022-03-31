@@ -6,7 +6,7 @@ func mod(a, b) => a % b
 func pow(a, b) => a ^ b
 
 func max(list) {
-    dim last_item = 0
+    dim last_item = 0s
     dim current_item = 0
     dim tmp = []
     dim length = len(list)
