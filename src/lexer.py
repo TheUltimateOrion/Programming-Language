@@ -47,7 +47,7 @@ TT_NEWLINE      = 'NEWLINE'
 TT_EOF          = 'EOF'
 
 KEYWORDS = [
-    'dim',
+    'val',
     'and',
     'or',
     'not',

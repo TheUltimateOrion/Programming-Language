@@ -10,5 +10,7 @@ An interpreted language written in python
 - [x] Add more built-in functions and variables
 - [x] Implement a do-while loop
 - [x] Add dictionary data type*
+- [x] Add Builtin-Variable checking
+- [x] Add square bracket value extracting syntax for strings
 
 \* = [**_Experimental_**]

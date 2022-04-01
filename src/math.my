@@ -6,16 +6,16 @@ func mod(a, b) => a % b
 func pow(a, b) => a ^ b
 
 func max(list) {
-    dim last_item = 0s
-    dim current_item = 0
-    dim tmp = []
-    dim length = len(list)
+    val last_item = 0s
+    val current_item = 0
+    val tmp = []
+    val length = len(list)
 
     for i=0 to length then
-        dim current_item = list : i
+        val current_item = list : i
         if current_item > last_item then
             append(tmp, current_item)
-            dim last_item = current_item
+            val last_item = current_item
         end
     end
 
@@ -23,16 +23,16 @@ func max(list) {
 }
 
 func min(list) {
-    dim last_item = MATH_POS_INF
-    dim current_item = 0
-    dim tmp = []
-    dim length = len(list)
+    val last_item = MATH_POS_INF
+    val current_item = 0
+    val tmp = []
+    val length = len(list)
 
     for i=0 to length then
-        dim current_item = list : i
+        val current_item = list : i
         if current_item < last_item then
             append(tmp, current_item)
-            dim last_item = current_item
+            val last_item = current_item
         end
     end
 

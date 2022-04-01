@@ -1,6 +1,6 @@
 func join(elements, separator) {
-	dim result = ""
-	dim LEN = len(elements)
+	val result = ""
+	val LEN = len(elements)
 
 	for i = 0 to LEN then
 		result = result + elements[i]
@@ -13,7 +13,7 @@ func join(elements, separator) {
 }
 
 func map(elements, _func) {
-	dim new_elements = []
+	val new_elements = []
 
 	for i = 0 to len(elements) then
 		append(new_elements, _func(elements[i]))

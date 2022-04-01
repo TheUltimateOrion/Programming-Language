@@ -6,7 +6,7 @@ import math
 import os
 from pathlib import Path
 from errors import RTError
-from lexer import TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
+from lexer import KEYWORDS, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
 from parser import Parser
 from rt import RTResult
 
@@ -101,8 +101,9 @@ class Value:
 class Number(Value):
     __class__ = "<type 'Number'>"
 
-    def __init__(self, value):
+    def __init__(self, value, overwritable=True):
         super().__init__()
+        self.overwritable = overwritable
         self.value = value
 
     def added_to(self, other):
@@ -230,8 +231,10 @@ class Number(Value):
 class String(Value):
     __class__ = "<type 'String'>"
 
-    def __init__(self, value):
+    def __init__(self, value, overwritable=True):
         super().__init__()
+        
+        self.overwritable = overwritable
         self.value = value
 
     def added_to(self, other):
@@ -271,8 +274,10 @@ class String(Value):
 class List(Value):
     __class__ = "<type 'List'>"
 
-    def __init__(self, elements):
+    def __init__(self, elements, overwritable=True):
         super().__init__()
+        
+        self.overwritable = overwritable
         self.elements = elements
 
     def union(self, other):
@@ -324,11 +329,15 @@ class List(Value):
     def __repr__(self):
         return f'[{", ".join([repr(x) for x in self.elements])}]'
 
+List.KEYWORDS = List(KEYWORDS, False)
+
 class Dict(Value):
     __class__ = "<type 'Dict'>"
 
-    def __init__(self, elements, keys, values):
+    def __init__(self, elements, keys, values, overwritable=True):
         super().__init__()
+        
+        self.overwritable = overwritable
         self.elements = elements
         self.keys = keys
         self.values = values
@@ -655,7 +664,6 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(String(value.__class__))
     execute_typeof.arg_names = ['value']
 
-
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.print_ret   = BuiltInFunction("print_ret")
 BuiltInFunction.input       = BuiltInFunction("input")
@@ -676,9 +684,9 @@ BuiltInFunction.typeof      = BuiltInFunction("typeof")
 Number.null = Number(0)
 Number.false = Number(0)
 Number.true = Number(1)
-Number.math_PI = Number(math.pi)
-Number.math_POS_INF = Number(float("inf"))
-Number.math_NEG_INF = Number(-1 * float("inf"))
+Number.math_PI = Number(math.pi, False)
+Number.math_POS_INF = Number(float("inf"), False)
+Number.math_NEG_INF = Number(-1 * float("inf"), False)
 
 class Import:
     def __init__(self, import_name):
@@ -846,6 +854,14 @@ class Interpreter:
                 f"Cannot redeclare a built-in function: {var_name}",
                 context
             ))
+
+        if context.symbol_table.get(var_name):
+            if context.symbol_table.get(var_name).overwritable == False:
+                return res.failure(RTError(
+                    node.pos_start, node.pos_end,
+                    f"Cannot redeclare a built-in variable: {var_name}",
+                    context
+                ))
 
         if node.reassign:
             if not context.symbol_table.get(var_name):
@@ -1047,22 +1063,25 @@ class Interpreter:
 
     def visit_ArrAccessNode(self, node, context):
         res = RTResult()
-        arr = res.register(self.visit(node.arr, context))
+        iterable = res.register(self.visit(node.iterable, context))
         if res.should_return(): return res
-        arr = arr.copy().set_pos(node.pos_start, node.pos_end)
+        iterable = iterable.copy().set_pos(node.pos_start, node.pos_end)
 
         index = res.register(self.visit(node.index, context))
         if res.should_return(): return res
 
         if isinstance(index, Number):
-            if not isinstance(arr, List):
+            if not isinstance(iterable, List | String):
                 return res.failure(RTError(
-                    arr.pos_start, arr.pos_end,
+                    iterable.pos_start, iterable.pos_end,
                     'Object is not a list',
                     context
                 ))
             try:
-                value = arr.elements[index.value]
+                if isinstance(iterable, List):
+                    value = iterable.elements[index.value]
+                elif isinstance(iterable, String):
+                    value = iterable.value[index.value]
             except:
                 return res.failure(RTError(
                     index.pos_start, index.pos_end,
@@ -1070,16 +1089,16 @@ class Interpreter:
                     context
                 ))
         elif isinstance(index, String):
-            if not isinstance(arr, Dict):
+            if not isinstance(iterable, Dict):
                 return res.failure(RTError(
-                    arr.pos_start, arr.pos_end,
+                    iterable.pos_start, iterable.pos_end,
                     'Object is not a dictionary',
                     context
                 ))
             value = None
-            for x in range(len(arr.elements.keys())):
-                if arr.keys[x].value == index.value:
-                    value = arr.values[x]
+            for x in range(len(iterable.elements.keys())):
+                if iterable.keys[x].value == index.value:
+                    value = iterable.values[x]
 
             if value == None:
                 return res.failure(RTError(
@@ -1164,9 +1183,12 @@ class Interpreter:
 ########################################
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("MATH_PI", Number.math_PI)
-global_symbol_table.set("MATH_POS_INF", Number.math_POS_INF)
-global_symbol_table.set("MATH_NEG_INF", Number.math_NEG_INF)
+global_symbol_table.set("PI", Number.math_PI)
+global_symbol_table.set("POS_INF", Number.math_POS_INF)
+global_symbol_table.set("NEG_INF", Number.math_NEG_INF)
+
+global_symbol_table.set("__keywords__", List.KEYWORDS)
+
 global_symbol_table.set("print", BuiltInFunction.print)
 global_symbol_table.set("print_ret", BuiltInFunction.print_ret)
 global_symbol_table.set("input", BuiltInFunction.input)
