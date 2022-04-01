@@ -1,6 +1,6 @@
 func join(elements, separator) {
-	val result = ""
-	val LEN = len(elements)
+	let result = ""
+	let LEN = len(elements)
 
 	for i = 0 to LEN then
 		result = result + elements[i]
@@ -13,7 +13,7 @@ func join(elements, separator) {
 }
 
 func map(elements, _func) {
-	val new_elements = []
+	let new_elements = []
 
 	for i = 0 to len(elements) then
 		append(new_elements, _func(elements[i]))

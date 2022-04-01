@@ -316,14 +316,14 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected 'ret', 'continue', 'break', 'val', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                "Expected 'ret', 'continue', 'break', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
             ))
         return res.success(expr)
 
     def expr(self):
         res = ParseResult()
 
-        if self.current_tok.matches(TT_KEYWORD, 'val'):
+        if self.current_tok.matches(TT_KEYWORD, 'let'):
             res.register_advancement()
             self.advance()
 
@@ -364,12 +364,12 @@ class Parser:
 
             return res.success(DeleteNode(var_name, pos_start, self.current_tok.pos_start.copy()))
 
-        node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'and'), (TT_KEYWORD, 'or'))))
+        node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'and'), (TT_KEYWORD, 'or'), (TT_KEYWORD, 'in'))))
 
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected 'val', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                "Expected 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
             ))
 
         return res.success(node)
@@ -448,7 +448,7 @@ class Parser:
                 if res.error:
                     return res.failure(InvalidSyntaxError(
                         self.current_tok.pos_start, self.current_tok.pos_end,
-                        "Expected ')', 'val', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                        "Expected ')', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
                     ))
 
                 while self.current_tok.type == TT_COMMA:
@@ -480,7 +480,7 @@ class Parser:
             if res.error:
                 return res.failure(InvalidSyntaxError(
                     self.current_tok.pos_start, self.current_tok.pos_end,
-                    "Expected ']', 'val', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                    "Expected ']', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
                 ))
 
             if self.current_tok.type != TT_RSQUARE:
@@ -596,7 +596,7 @@ class Parser:
             if res.error:
                 return res.failure(InvalidSyntaxError(
                     self.current_tok.pos_start, self.current_tok.pos_end,
-                    "Expected ']', 'val', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                    "Expected ']', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
                 ))
 
             while self.current_tok.type == TT_COMMA:
@@ -664,7 +664,7 @@ class Parser:
             if res.error:
                 return res.failure(InvalidSyntaxError(
                     self.current_tok.pos_start, self.current_tok.pos_end,
-                    "Expected '}', 'val', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[', '{' or 'not'"
+                    "Expected '}', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[', '{' or 'not'"
                 ))
 
             element_nodes.update({key_name: expr})

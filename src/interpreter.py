@@ -77,6 +77,9 @@ class Value:
 
     def concat(self, other):
         return None, self.illegal_operation(other)
+    
+    def is_in(self, other):
+        return None, self.illegal_operation(other)
 
     def notted(self):
         return None, self.illegal_operation()
@@ -210,6 +213,20 @@ class Number(Value):
         else:
             return None, Value.illegal_operation(self, other)
 
+    def is_in(self, other):
+        if isinstance(other, List):
+            for x in other.elements:
+                if isinstance(x, List):
+                    if self.is_in(x)[0].value == 1:
+                        return Number(1).set_context(self.context), None
+                else:
+                    if self.value == x.value:
+                        return Number(1).set_context(self.context), None
+            
+            return Number(int(0)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+    
     def notted(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
@@ -255,6 +272,20 @@ class String(Value):
 
     def concat(self, other):
         return self.added_to(other)
+
+    def is_in(self, other):
+        if isinstance(other, List):
+            for x in other.elements:
+                if isinstance(x, List):
+                    if self.is_in(x)[0].value == 1:
+                        return Number(1).set_context(self.context), None
+                else:
+                    if self.value == x.value:
+                        return Number(1).set_context(self.context), None
+            
+            return Number(int(0)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
 
     def is_true(self):
         return len(self.value) > 0
@@ -913,6 +944,8 @@ class Interpreter:
             result, error = left.anded_by(right)
         elif node.op_tok.matches(TT_KEYWORD, 'or'):
             result, error = left.ored_by(right)
+        elif node.op_tok.matches(TT_KEYWORD, 'in'):
+            result, error = left.is_in(right)
 
         if error:
             return res.failure(error)

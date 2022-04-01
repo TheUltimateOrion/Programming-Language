@@ -47,7 +47,7 @@ TT_NEWLINE      = 'NEWLINE'
 TT_EOF          = 'EOF'
 
 KEYWORDS = [
-    'val',
+    'let',
     'and',
     'or',
     'not',
@@ -69,7 +69,8 @@ KEYWORDS = [
     'false',
     'null',
     'do',
-    'delete'
+    'delete',
+    'in'
 ]
 
 ########################################

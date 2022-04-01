@@ -6,16 +6,16 @@ func mod(a, b) => a % b
 func pow(a, b) => a ^ b
 
 func max(list) {
-    val last_item = 0s
-    val current_item = 0
-    val tmp = []
-    val length = len(list)
+    let last_item = 0s
+    let current_item = 0
+    let tmp = []
+    let length = len(list)
 
     for i=0 to length then
-        val current_item = list : i
+        let current_item = list : i
         if current_item > last_item then
             append(tmp, current_item)
-            val last_item = current_item
+            let last_item = current_item
         end
     end
 
@@ -23,16 +23,16 @@ func max(list) {
 }
 
 func min(list) {
-    val last_item = MATH_POS_INF
-    val current_item = 0
-    val tmp = []
-    val length = len(list)
+    let last_item = MATH_POS_INF
+    let current_item = 0
+    let tmp = []
+    let length = len(list)
 
     for i=0 to length then
-        val current_item = list : i
+        let current_item = list : i
         if current_item < last_item then
             append(tmp, current_item)
-            val last_item = current_item
+            let last_item = current_item
         end
     end
 
