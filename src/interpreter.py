@@ -274,13 +274,19 @@ class String(Value):
         return self.added_to(other)
 
     def is_in(self, other):
-        if isinstance(other, List):
-            for x in other.elements:
-                if isinstance(x, List):
-                    if self.is_in(x)[0].value == 1:
-                        return Number(1).set_context(self.context), None
-                else:
-                    if self.value == x.value:
+        if isinstance(other, List | String):
+            if isinstance(other, List):
+                for x in other.elements:
+                    if isinstance(x, List):
+                        if self.is_in(x)[0].value == 1:
+                            return Number(1).set_context(self.context), None
+                    else:
+                        if self.value == x.value:
+                            return Number(1).set_context(self.context), None
+            
+            elif isinstance(other, String):
+                for x in other.value:
+                    if self.value == x:
                         return Number(1).set_context(self.context), None
             
             return Number(int(0)).set_context(self.context), None
@@ -337,6 +343,22 @@ class List(Value):
             for val in new_list.elements:
                 val.value = val.value * other.value
             return new_list, None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def get_comparison_eq(self, other):
+        if isinstance(other, List):
+            if len(self.elements) == len(other.elements):
+                for i in range(len(self.elements)):
+                    if isinstance(self.elements[i], Number | String):
+                        if self.elements[i].value != other.elements[i].value:
+                            return Number(0).set_context(self.context), None
+                    elif isinstance(self.elements[i], List):
+                        if self.elements[i].get_comparison_eq(other.elements[i])[0].value != 1:
+                            return Number(0).set_context(self.context), None
+                return Number(1).set_context(self.context), None
+            else:
+                return Number(0).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
