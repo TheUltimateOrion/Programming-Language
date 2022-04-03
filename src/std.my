@@ -1,6 +1,6 @@
 func join(elements, separator) {
 	let result = ""
-	let LEN = len(elements)
+	const LEN = len(elements)
 
 	for i = 0 to LEN then
 		result = result + elements[i]

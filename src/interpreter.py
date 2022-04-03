@@ -891,7 +891,7 @@ class Interpreter:
                 f"'{var_name}' is not defined",
                 context
             ))
-
+        
         value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
         return res.success(value)
 
@@ -900,6 +900,9 @@ class Interpreter:
         var_name = node.var_name_tok.value
         value = res.register(self.visit(node.value_node, context))
         if res.should_return(): return res
+
+        if node.constant and not isinstance(value, BaseFunction):
+            value.overwritable = False
 
         if isinstance(context.symbol_table.get(var_name), BuiltInFunction):
             return res.failure(RTError(
@@ -912,7 +915,7 @@ class Interpreter:
             if context.symbol_table.get(var_name).overwritable == False:
                 return res.failure(RTError(
                     node.pos_start, node.pos_end,
-                    f"Cannot redeclare a built-in variable: {var_name}",
+                    f"Cannot redeclare a constant variable: {var_name}",
                     context
                 ))
 
@@ -923,7 +926,7 @@ class Interpreter:
                     f"'{var_name}' is not defined",
                     context
                 ))
-    
+                
         context.symbol_table.set(var_name, value)
         return res.success(value)
 

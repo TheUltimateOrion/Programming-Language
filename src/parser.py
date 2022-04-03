@@ -48,10 +48,11 @@ class VarAccessNode:
         self.pos_end = self.var_name_tok.pos_end
 
 class VarAssignNode:
-    def __init__(self, var_name_tok, value_node, reassign):
+    def __init__(self, var_name_tok, value_node, reassign, constant=False):
         self.var_name_tok = var_name_tok
         self.value_node = value_node
         self.reassign = reassign
+        self.constant = constant
 
         self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.value_node.pos_end
@@ -316,14 +317,17 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected 'ret', 'continue', 'break', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                "Expected 'ret', 'continue', 'break', 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
             ))
         return res.success(expr)
 
     def expr(self):
         res = ParseResult()
 
-        if self.current_tok.matches(TT_KEYWORD, 'let'):
+        if self.current_tok.matches(TT_KEYWORD, 'let') or self.current_tok.matches(TT_KEYWORD, 'const'):
+            constant = False
+            if self.current_tok.matches(TT_KEYWORD, 'const'):
+                constant = True
             res.register_advancement()
             self.advance()
 
@@ -347,7 +351,7 @@ class Parser:
             self.advance()
             expr = res.register(self.expr())
             if res.error: return res
-            return res.success(VarAssignNode(var_name, expr, False))
+            return res.success(VarAssignNode(var_name, expr, False, constant))
         
         if self.current_tok.matches(TT_KEYWORD, 'delete'):
             pos_start = self.current_tok.pos_start.copy()
@@ -369,7 +373,7 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                "Expected 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
             ))
 
         return res.success(node)
@@ -448,7 +452,7 @@ class Parser:
                 if res.error:
                     return res.failure(InvalidSyntaxError(
                         self.current_tok.pos_start, self.current_tok.pos_end,
-                        "Expected ')', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                        "Expected ')', 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
                     ))
 
                 while self.current_tok.type == TT_COMMA:
@@ -480,7 +484,7 @@ class Parser:
             if res.error:
                 return res.failure(InvalidSyntaxError(
                     self.current_tok.pos_start, self.current_tok.pos_end,
-                    "Expected ']', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                    "Expected ']', 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
                 ))
 
             if self.current_tok.type != TT_RSQUARE:
@@ -596,7 +600,7 @@ class Parser:
             if res.error:
                 return res.failure(InvalidSyntaxError(
                     self.current_tok.pos_start, self.current_tok.pos_end,
-                    "Expected ']', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                    "Expected ']', 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
                 ))
 
             while self.current_tok.type == TT_COMMA:
@@ -664,7 +668,7 @@ class Parser:
             if res.error:
                 return res.failure(InvalidSyntaxError(
                     self.current_tok.pos_start, self.current_tok.pos_end,
-                    "Expected '}', 'let', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[', '{' or 'not'"
+                    "Expected '}', 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[', '{' or 'not'"
                 ))
 
             element_nodes.update({key_name: expr})
@@ -1157,8 +1161,7 @@ class Parser:
         res = ParseResult()
         left = res.register(func_a())
         if res.error: return res
-
-        
+                
         while self.current_tok.type in ops or (self.current_tok.type, self.current_tok.value) in ops:
             op_tok = self.current_tok
             res.register_advancement()

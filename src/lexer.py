@@ -48,6 +48,7 @@ TT_EOF          = 'EOF'
 
 KEYWORDS = [
     'let',
+    'const',
     'and',
     'or',
     'not',
@@ -70,7 +71,7 @@ KEYWORDS = [
     'null',
     'do',
     'delete',
-    'in'
+    'in',
 ]
 
 ########################################

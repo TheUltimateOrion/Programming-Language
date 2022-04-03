@@ -12,6 +12,6 @@ An interpreted language written in python
 - [x] Add dictionary data type*
 - [x] Add built-in variable checking
 - [x] Add square bracket value extracting syntax for strings
-- Final Boss: [ ] Add classes
+- [ ] Final Boss: Add classes
 
 \* = [**_Experimental_**]
