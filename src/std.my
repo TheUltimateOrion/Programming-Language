@@ -3,9 +3,9 @@ func join(elements, separator) {
 	const LEN = len(elements)
 
 	for i = 0 to LEN then
-		result = result + elements[i]
+		result += elements[i]
 		if i != LEN - 1 then
-			result = result + separator
+			result += separator
 		end
 	end
 

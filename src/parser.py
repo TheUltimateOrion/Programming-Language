@@ -3,8 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from lexer import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_POW, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
-
+from token import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
 
 class NumberNode:
     def __init__(self, tok):
@@ -48,8 +47,9 @@ class VarAccessNode:
         self.pos_end = self.var_name_tok.pos_end
 
 class VarAssignNode:
-    def __init__(self, var_name_tok, value_node, reassign, constant=False):
+    def __init__(self, var_name_tok, op_tok, value_node, reassign, constant=False):
         self.var_name_tok = var_name_tok
+        self.op_tok = op_tok
         self.value_node = value_node
         self.reassign = reassign
         self.constant = constant
@@ -347,11 +347,13 @@ class Parser:
                     "Expected '='"
                 ))
 
+            op_tok = self.current_tok
+
             res.register_advancement()
             self.advance()
             expr = res.register(self.expr())
             if res.error: return res
-            return res.success(VarAssignNode(var_name, expr, False, constant))
+            return res.success(VarAssignNode(var_name, op_tok, expr, False, constant))
         
         if self.current_tok.matches(TT_KEYWORD, 'delete'):
             pos_start = self.current_tok.pos_start.copy()
@@ -515,12 +517,14 @@ class Parser:
         elif tok.type == TT_IDENTIFIER:
             res.register_advancement()
             self.advance()
-            if self.current_tok.type == TT_EQ:
+            if self.current_tok.type in (TT_EQ, TT_PLUSE, TT_MINUSE, TT_MULE, TT_DIVE, TT_POWE, TT_MODE):
+                op_tok = self.current_tok
+
                 res.register_advancement()
                 self.advance()
                 expr = res.register(self.expr())
                 if res.error: return res
-                return res.success(VarAssignNode(tok, expr, True))
+                return res.success(VarAssignNode(tok, op_tok, expr, True))
             return res.success(VarAccessNode(tok))
 
         elif tok.type == TT_LPAREN:

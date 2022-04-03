@@ -1,123 +1,7 @@
-########################################
-# CONSTANTS
-########################################
-
-import string
-
-DIGITS = '0123456789'
-LETTERS = string.ascii_letters
-LETTERS_DIGITS = LETTERS + DIGITS
-
-########################################
-# TOKENS
-########################################
-
+from token import DIGITS, KEYWORDS, LETTERS, LETTERS_DIGITS, TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
 from errors import ExpectedCharError, IllegalCharError
 
-TT_INT          = 'INT'
-TT_FLOAT        = 'FLOAT'
-TT_STRING       = 'STRING'
-TT_IDENTIFIER   = 'IDENTIFIER'
-TT_KEYWORD      = 'KEYWORD'
-TT_PLUS         = 'PLUS'
-TT_MINUS        = 'MINUS'
-TT_MUL          = 'MUL'
-TT_DIV          = 'DIV'
-TT_POW          = 'POW'
-TT_MOD          = 'MOD'
-TT_EQ           = 'EQ'
-TT_LPAREN       = 'LPAREN'
-TT_RPAREN       = 'RPAREN'
-TT_LBRACE       = 'LBRACE'
-TT_RBRACE       = 'RBRACE'
-TT_LSQUARE      = 'LSQUARE'
-TT_RSQUARE      = 'RSQUARE'
-TT_KEY          = 'KEY'
-TT_CONCAT       = 'CONCAT'
-TT_UNION        = 'UNION'
-TT_EE           = 'EE'
-TT_NE           = 'NE'
-TT_LT           = 'LT'
-TT_GT           = 'GT'
-TT_LTE          = 'LTE'
-TT_GTE          = 'GTE'
-TT_COMMA        = 'COMMA'
-TT_ARROW        = 'ARROW'
-TT_NEWLINE      = 'NEWLINE'
-TT_EOF          = 'EOF'
-
-KEYWORDS = [
-    'let',
-    'const',
-    'and',
-    'or',
-    'not',
-    'if',
-    'elif',
-    'else',
-    'for',
-    'to',
-    'step',
-    'while',
-    'func',
-    'then',
-    'end',
-    'ret',
-    'continue',
-    'break',
-    'import',
-    'true',
-    'false',
-    'null',
-    'do',
-    'delete',
-    'in',
-]
-
-########################################
-# POSITION
-########################################
-
-class Position:
-    def __init__(self, idx, ln, col, fn, ftxt):
-        self.idx = idx
-        self.ln = ln
-        self.col = col
-        self.fn = fn
-        self.ftxt = ftxt
-
-    def advance(self, current_char=None):
-        self.idx += 1
-        self.col += 1
-
-        if current_char == '\n':
-            self.ln += 1
-            self.col = 0
-
-        return self
-
-    def copy(self):
-        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
-
-class Token:
-    def __init__(self, type_, value=None, pos_start=None, pos_end=None):
-        self.type = type_
-        self.value = value
-
-        if pos_start:
-            self.pos_start = pos_start.copy()
-            self.pos_end = pos_start.copy()
-            self.pos_end.advance()
-
-        if pos_end:
-            self.pos_end = pos_end.copy()
-
-    def matches(self, type_, value):
-        return self.type == type_ and self.value == value
-
-    def __repr__(self):
-        if self.value: return f'{self.type}:{self.value}'
-        return f'{self.type}'
+from position import Position
 
 ########################################
 # LEXER
@@ -151,23 +35,18 @@ class Lexer:
             elif self.current_char == '"':
                 tokens.append(self.make_string())
             elif self.current_char == '+':
-                tokens.append(Token(TT_PLUS, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_plus())
             elif self.current_char == '-':
-                tokens.append(Token(TT_MINUS, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_minus())
             elif self.current_char == '*':
-                tokens.append(Token(TT_MUL, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_op(TT_MUL, TT_MULE))
             elif self.current_char == '/':
                 tok = self.make_divide()
                 if tok: tokens.append(tok)
             elif self.current_char == '%':
-                tokens.append(Token(TT_MOD, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_op(TT_MOD, TT_MODE))
             elif self.current_char == '^':
-                tokens.append(Token(TT_POW, pos_start=self.pos))
-                self.advance()
+                tokens.append(self.make_op(TT_POW, TT_POWE))
             elif self.current_char == '(':
                 tokens.append(Token(TT_LPAREN, pos_start=self.pos))
                 self.advance()
@@ -231,6 +110,39 @@ class Lexer:
             return Token(TT_INT, int(num_str), pos_start, self.pos)
         else:
             return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
+
+    def make_plus(self):
+        tok_type = TT_PLUS
+        pos_start = self.pos.copy()
+        self.advance()
+
+        if self.current_char == '=':
+            self.advance()
+            tok_type = TT_PLUSE
+
+        return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+
+    def make_minus(self):
+        tok_type = TT_MINUS
+        pos_start = self.pos.copy()
+        self.advance()
+
+        if self.current_char == '=':
+            self.advance()
+            tok_type = TT_MINUSE
+
+        return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+
+    def make_op(self, tok_type1, tok_type2):
+        tok_type = tok_type1
+        pos_start = self.pos.copy()
+        self.advance()
+
+        if self.current_char == '=':
+            self.advance()
+            tok_type = tok_type2
+
+        return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
     def make_string(self):
         string = ''
@@ -327,10 +239,14 @@ class Lexer:
         return Token(TT_KEY, pos_start=pos_start, pos_end=self.pos), None
 
     def make_divide(self):
+        pos_start = self.pos.copy()
         self.advance()
 
         if self.current_char == '/':
             self.skip_comment()
+        elif self.current_char == '=':
+            self.advance()
+            return Token(TT_DIVE, pos_start=pos_start, pos_end=self.pos)
         else:
             return Token(TT_DIV, pos_start=self.pos)
 

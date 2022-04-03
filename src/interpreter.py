@@ -9,6 +9,7 @@ from errors import RTError
 from lexer import KEYWORDS, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
 from parser import Parser
 from rt import RTResult
+from token import TT_DIVE, TT_EQ, TT_MINUSE, TT_MODE, TT_MULE, TT_PLUSE
 
 ########################################
 # VALUES
@@ -920,12 +921,71 @@ class Interpreter:
                 ))
 
         if node.reassign:
-            if not context.symbol_table.get(var_name):
+            prev_val = context.symbol_table.get(var_name)
+
+            if not prev_val:
                 return res.failure(RTError(
                     node.pos_start, node.pos_end,
                     f"'{var_name}' is not defined",
                     context
                 ))
+
+            if node.op_tok.type == TT_PLUSE:
+                if isinstance(prev_val, String | Number):
+                    value = Number(prev_val.value + value.value) if isinstance(prev_val, Number) else String(prev_val.value + str(value.value))
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+            
+            if node.op_tok.type == TT_MINUSE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value - value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+            
+            if node.op_tok.type == TT_MULE:
+                if isinstance(prev_val, String | Number):
+                    value = Number(prev_val.value * value.value) if isinstance(prev_val, Number) else String(prev_val.value * value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+            else:
+                if value.value == 0:
+                    return res.failure(RTError(
+                        value.pos_start, value.pos_end,
+                        'Division by zero',
+                        context
+                    ))
+
+                if node.op_tok.type == TT_DIVE:
+                    if isinstance(prev_val, Number):
+                        value = Number(prev_val.value / value.value)
+                    else:
+                        return res.failure(RTError(
+                            node.pos_start, node.pos_end,
+                            f"Invalid variable type",
+                            context
+                        ))
+
+                if node.op_tok.type == TT_MODE:
+                    if isinstance(prev_val, Number):
+                        value = Number(prev_val.value % value.value)
+                    else:
+                        return res.failure(RTError(
+                            node.pos_start, node.pos_end,
+                            f"Invalid variable type",
+                            context
+                        ))
                 
         context.symbol_table.set(var_name, value)
         return res.success(value)
