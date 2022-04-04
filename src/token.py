@@ -49,6 +49,8 @@ TT_COMMA        = 'COMMA'
 TT_ARROW        = 'ARROW'
 TT_NEWLINE      = 'NEWLINE'
 TT_EOF          = 'EOF'
+TT_INCR         = 'INCR'
+TT_DECR         = 'DECR'
 
 KEYWORDS = [
     'let',

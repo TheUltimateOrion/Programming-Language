@@ -8,8 +8,8 @@ from pathlib import Path
 from errors import RTError
 from lexer import KEYWORDS, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
 from parser import Parser
-from rt import RTResult
-from token import TT_DIVE, TT_EQ, TT_MINUSE, TT_MODE, TT_MULE, TT_PLUSE
+from runtime import RTResult
+from token import TT_DECR, TT_DIVE, TT_EQ, TT_INCR, TT_MINUSE, TT_MODE, TT_MULE, TT_PLUSE
 
 ########################################
 # VALUES
@@ -1046,6 +1046,10 @@ class Interpreter:
 
         if node.op_tok.type == TT_MINUS:
             number, error = number.multed_by(Number(-1))
+        elif node.op_tok.type == TT_INCR:
+            number, error = number.added_to(Number(1))
+        elif node.op_tok.type == TT_DECR:
+            number, error = number.subbed_by(Number(1))
         elif node.op_tok.matches(TT_KEYWORD, 'not'):
             number, error = number.notted()
 
@@ -1330,6 +1334,8 @@ def run(fn, text):
     lexer = Lexer(fn, text)
     tokens, error = lexer.make_tokens()
     if error: return None, error
+
+    print(tokens)
 
     # Generate AST
     parser = Parser(tokens)
