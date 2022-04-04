@@ -3,7 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from token import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
+from token import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DECR, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INCR, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
 
 class NumberNode:
     def __init__(self, tok):
@@ -427,9 +427,15 @@ class Parser:
         if tok.type in (TT_PLUS, TT_MINUS):
             res.register_advancement()
             self.advance()
-            factor = res.register(self.factor())
+            power = res.register(self.power())
             if res.error: return res
-            return res.success(UnaryOpNode(tok, factor))
+            return res.success(UnaryOpNode(tok, power))
+        elif tok.type in (TT_INCR, TT_DECR):
+            res.register_advancement()
+            self.advance()
+            power = res.register(self.power())
+            if res.error: return res
+            return res.success(UnaryOpNode(tok, power))
 
         return self.power()
 

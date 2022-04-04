@@ -1,4 +1,4 @@
-from token import DIGITS, KEYWORDS, LETTERS, LETTERS_DIGITS, TT_ARROW, TT_COMMA, TT_CONCAT, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
+from token import DIGITS, KEYWORDS, LETTERS, LETTERS_DIGITS, TT_ARROW, TT_COMMA, TT_CONCAT, TT_DECR, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INCR, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
 from errors import ExpectedCharError, IllegalCharError
 
 from position import Position
@@ -119,6 +119,9 @@ class Lexer:
         if self.current_char == '=':
             self.advance()
             tok_type = TT_PLUSE
+        elif self.current_char == '+':
+            self.advance()
+            tok_type = TT_INCR
 
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
@@ -130,6 +133,9 @@ class Lexer:
         if self.current_char == '=':
             self.advance()
             tok_type = TT_MINUSE
+        elif self.current_char == '-':
+            self.advance()
+            tok_type = TT_DECR
 
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
