@@ -1,5 +1,4 @@
-from interpreter import run
-
+from my_lang.interpreter import run
 
 while True:
     text = input('basic > ')
