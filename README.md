@@ -13,6 +13,7 @@ An interpreted language written in python
 - [x] Add built-in variable checking
 - [x] Add square bracket value extracting syntax for strings
 - [x] Add additional assingment operators
+- [ ] Add bitwise operators
 
 
 

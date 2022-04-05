@@ -6,10 +6,10 @@ import math
 import os
 from pathlib import Path
 from errors import RTError
-from lexer import KEYWORDS, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_UNION, Lexer
+from lexer import KEYWORDS, TT_CONCAT, TT_DIV, TT_EE, TT_GT, TT_GTE, TT_KEYWORD, TT_LT, TT_LTE, TT_MINUS, TT_MOD, TT_MUL, TT_NE, TT_PLUS, TT_POW, TT_BW_OR, Lexer
 from parser import Parser
 from runtime import RTResult
-from token import TT_DECR, TT_DIVE, TT_EQ, TT_INCR, TT_MINUSE, TT_MODE, TT_MULE, TT_PLUSE
+from token import TT_BW_AND, TT_BW_ANDE, TT_BW_LSHIFT, TT_BW_LSHIFTE, TT_BW_NOT, TT_BW_ORE, TT_BW_RSHIFT, TT_BW_RSHIFTE, TT_BW_XOR, TT_BW_XORE, TT_DECR, TT_DIVE, TT_INCR, TT_MINUSE, TT_MODE, TT_MULE, TT_PLUSE, TT_POWE
 
 ########################################
 # VALUES
@@ -49,9 +49,6 @@ class Value:
     def powed_by(self, other):
         return None, self.illegal_operation(other)
 
-    def union(self, other):
-        return None, self.illegal_operation(other)
-
     def get_comparison_eq(self, other):
         return None, self.illegal_operation(other)
 
@@ -84,7 +81,25 @@ class Value:
 
     def notted(self):
         return None, self.illegal_operation()
-    
+
+    def bw_anded_by(self, other):
+        return None, self.illegal_operation(other)
+
+    def bw_xored_by(self, other):
+        return None, self.illegal_operation(other)
+
+    def bw_ored_by(self, other):
+        return None, self.illegal_operation(other)
+
+    def bw_rshift(self, other):
+        return None, self.illegal_operation(other)
+
+    def bw_lshift(self, other):
+        return None, self.illegal_operation(other)
+
+    def bw_notted(self):
+        return None, self.illegal_operation()
+         
     def execute(self):
         return RTResult().failure(self.illegal_operation())
 
@@ -231,6 +246,39 @@ class Number(Value):
     def notted(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
+    def bw_anded_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value & other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def bw_ored_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value | other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def bw_xored_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value & other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def bw_notted(self):
+        return Number(~self.value).set_context(self.context), None
+
+    def bw_rshift(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value >> other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def bw_lshift(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value << other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
     def copy(self):
         copy = Number(self.value)
         copy.set_pos(self.pos_start, self.pos_end)
@@ -317,11 +365,6 @@ class List(Value):
         
         self.overwritable = overwritable
         self.elements = elements
-
-    def union(self, other):
-        new_list = self.copy()
-        new_list.elements.append(other)
-        return new_list, None
 
     def subbed_by(self, other):
         if isinstance(other, Number):
@@ -959,6 +1002,67 @@ class Interpreter:
                         f"Invalid variable type",
                         context
                     ))
+
+            if node.op_tok.type == TT_POWE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value ** value.value) if isinstance(prev_val, Number) else String(prev_val.value * value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+            
+            if node.op_tok.type == TT_BW_ANDE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value & value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+
+            if node.op_tok.type == TT_BW_ORE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value | value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+
+            if node.op_tok.type == TT_BW_XORE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value ^ value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+
+            if node.op_tok.type == TT_BW_LSHIFTE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value << value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+
+            if node.op_tok.type == TT_BW_RSHIFTE:
+                if isinstance(prev_val, Number):
+                    value = Number(prev_val.value >> value.value)
+                else:
+                    return res.failure(RTError(
+                        node.pos_start, node.pos_end,
+                        f"Invalid variable type",
+                        context
+                    ))
+
             else:
                 if value.value == 0:
                     return res.failure(RTError(
@@ -979,7 +1083,7 @@ class Interpreter:
 
                 if node.op_tok.type == TT_MODE:
                     if isinstance(prev_val, Number):
-                        value = Number(prev_val.value % value.value)
+                        value = value.modded_by(prev_val)
                     else:
                         return res.failure(RTError(
                             node.pos_start, node.pos_end,
@@ -1011,8 +1115,6 @@ class Interpreter:
             result, error = left.powed_by(right)
         elif node.op_tok.type == TT_CONCAT:
             result, error = left.concat(right)
-        elif node.op_tok.type == TT_UNION:
-            result, error = left.union(right)
         elif node.op_tok.type == TT_EE:
             result, error = left.get_comparison_eq(right)
         elif node.op_tok.type == TT_NE:
@@ -1031,7 +1133,16 @@ class Interpreter:
             result, error = left.ored_by(right)
         elif node.op_tok.matches(TT_KEYWORD, 'in'):
             result, error = left.is_in(right)
-
+        elif node.op_tok.type == TT_BW_AND:
+            result, error = left.bw_anded_by(right)
+        elif node.op_tok.type == TT_BW_XOR:
+            result, error = left.bw_xored_by(right)
+        elif node.op_tok.type == TT_BW_OR:
+            result, error = left.bw_ored_by(right)
+        elif node.op_tok.type == TT_BW_RSHIFT:
+            result, error = left.bw_rshift(right)
+        elif node.op_tok.type == TT_BW_LSHIFT:
+            result, error = left.bw_lshift(right)
         if error:
             return res.failure(error)
         else:
@@ -1050,6 +1161,8 @@ class Interpreter:
             number, error = number.added_to(Number(1))
         elif node.op_tok.type == TT_DECR:
             number, error = number.subbed_by(Number(1))
+        elif node.op_tok.type == TT_BW_NOT:
+            number, error = number.bw_notted()
         elif node.op_tok.matches(TT_KEYWORD, 'not'):
             number, error = number.notted()
 
@@ -1335,6 +1448,8 @@ def run(fn, text):
     tokens, error = lexer.make_tokens()
     if error: return None, error
     
+    print(tokens)
+
     # Generate AST
     parser = Parser(tokens)
     ast = parser.parse()

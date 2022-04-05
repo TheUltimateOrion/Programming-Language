@@ -1,4 +1,4 @@
-from token import DIGITS, KEYWORDS, LETTERS, LETTERS_DIGITS, TT_ARROW, TT_COMMA, TT_CONCAT, TT_DECR, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INCR, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
+from token import DIGITS, KEYWORDS, LETTERS, LETTERS_DIGITS, TT_ARROW, TT_BW_AND, TT_BW_ANDE, TT_BW_LSHIFT, TT_BW_LSHIFTE, TT_BW_NOT, TT_BW_ORE, TT_BW_RSHIFT, TT_BW_RSHIFTE, TT_BW_XOR, TT_BW_XORE, TT_COMMA, TT_CONCAT, TT_DECR, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INCR, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_BW_OR, Token
 from errors import ExpectedCharError, IllegalCharError
 
 from position import Position
@@ -39,14 +39,12 @@ class Lexer:
             elif self.current_char == '-':
                 tokens.append(self.make_minus())
             elif self.current_char == '*':
-                tokens.append(self.make_op(TT_MUL, TT_MULE))
+                tokens.append(self.make_multiply())
             elif self.current_char == '/':
                 tok = self.make_divide()
                 if tok: tokens.append(tok)
             elif self.current_char == '%':
                 tokens.append(self.make_op(TT_MOD, TT_MODE))
-            elif self.current_char == '^':
-                tokens.append(self.make_op(TT_POW, TT_POWE))
             elif self.current_char == '(':
                 tokens.append(Token(TT_LPAREN, pos_start=self.pos))
                 self.advance()
@@ -70,7 +68,13 @@ class Lexer:
                 if error: return [], error
                 tokens.append(token)
             elif self.current_char == '|':
-                tokens.append(Token(TT_UNION, pos_start=self.pos))
+                tokens.append(self.make_op(TT_BW_OR, TT_BW_ORE))
+            elif self.current_char == '^':
+                tokens.append(self.make_op(TT_BW_XOR, TT_BW_XORE))
+            elif self.current_char == '&':
+                tokens.append(self.make_op(TT_BW_AND, TT_BW_ANDE))
+            elif self.current_char == '~':
+                tokens.append(Token(TT_BW_NOT, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '!':
                 token, error = self.make_not_equals()
@@ -122,6 +126,24 @@ class Lexer:
         elif self.current_char == '+':
             self.advance()
             tok_type = TT_INCR
+
+        return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+
+    def make_multiply(self):
+        tok_type = TT_MUL
+        pos_start = self.pos.copy()
+        self.advance()
+
+        if self.current_char == '=':
+            self.advance()
+            tok_type = TT_PLUSE
+        elif self.current_char == '*':
+            self.advance()
+            tok_type = TT_POW
+
+            if self.current_char == '=':
+                self.advance()
+                tok_type = TT_POWE
 
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
@@ -220,6 +242,13 @@ class Lexer:
         if self.current_char == '=':
             self.advance()
             tok_type = TT_LTE
+        elif self.current_char == '<':
+            self.advance()
+            tok_type = TT_BW_LSHIFT
+
+            if self.current_char == '=':
+                self.advance()
+                tok_type = TT_BW_LSHIFTE
 
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
@@ -231,6 +260,13 @@ class Lexer:
         if self.current_char == '=':
             self.advance()
             tok_type = TT_GTE
+        elif self.current_char == '>':
+            self.advance()
+            tok_type = TT_BW_RSHIFT
+
+            if self.current_char == '=':
+                self.advance()
+                tok_type = TT_BW_RSHIFTE
 
         return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 

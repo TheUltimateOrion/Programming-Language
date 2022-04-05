@@ -3,7 +3,7 @@
 ########################################
 
 from errors import InvalidSyntaxError
-from token import TT_ARROW, TT_COMMA, TT_CONCAT, TT_DECR, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INCR, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_UNION, Token
+from token import TT_ARROW, TT_BW_AND, TT_BW_ANDE, TT_BW_LSHIFT, TT_BW_LSHIFTE, TT_BW_NOT, TT_BW_ORE, TT_BW_RSHIFT, TT_BW_RSHIFTE, TT_BW_XOR, TT_BW_XORE, TT_COMMA, TT_CONCAT, TT_DECR, TT_DIV, TT_DIVE, TT_EE, TT_EOF, TT_EQ, TT_FLOAT, TT_GT, TT_GTE, TT_IDENTIFIER, TT_INCR, TT_INT, TT_KEY, TT_KEYWORD, TT_LBRACE, TT_LPAREN, TT_LSQUARE, TT_LT, TT_LTE, TT_MINUS, TT_MINUSE, TT_MOD, TT_MODE, TT_MUL, TT_MULE, TT_NE, TT_NEWLINE, TT_PLUS, TT_PLUSE, TT_POW, TT_POWE, TT_RBRACE, TT_RPAREN, TT_RSQUARE, TT_STRING, TT_BW_OR, Token
 
 class NumberNode:
     def __init__(self, tok):
@@ -370,15 +370,29 @@ class Parser:
 
             return res.success(DeleteNode(var_name, pos_start, self.current_tok.pos_start.copy()))
 
-        node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'and'), (TT_KEYWORD, 'or'), (TT_KEYWORD, 'in'))))
+        node = res.register(self.bin_op(self.bitwise_expr, (TT_BW_AND, TT_BW_XOR, TT_BW_OR, TT_BW_RSHIFT, TT_BW_LSHIFT)))
 
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[' or 'not'"
+                "Expected 'let', 'const', 'if', 'for', 'while', 'func', int, float, identifier, '+', '-', '(', '[', 'not' or 'delete'"
             ))
 
         return res.success(node)
+
+    def bitwise_expr(self):
+        res = ParseResult()
+
+        if self.current_tok.type == TT_BW_NOT:
+            op_tok = self.current_tok
+            res.register_advancement()
+            self.advance()
+
+            node = res.register(self.comp_expr())
+            if res.error: return res
+            return res.success(UnaryOpNode(op_tok, node))
+
+        return self.bin_op(self.comp_expr, ((TT_KEYWORD, 'and'), (TT_KEYWORD, 'or'), (TT_KEYWORD, 'in')))
 
     def comp_expr(self):
         res = ParseResult()
@@ -415,7 +429,7 @@ class Parser:
         return res.success(node)
 
     def arith_expr(self):
-        return self.bin_op(self.term, (TT_PLUS, TT_MINUS, TT_UNION))
+        return self.bin_op(self.term, (TT_PLUS, TT_MINUS))
 
     def term(self):
         return self.bin_op(self.factor, (TT_MUL, TT_DIV, TT_CONCAT, TT_MOD))
@@ -523,7 +537,10 @@ class Parser:
         elif tok.type == TT_IDENTIFIER:
             res.register_advancement()
             self.advance()
-            if self.current_tok.type in (TT_EQ, TT_PLUSE, TT_MINUSE, TT_MULE, TT_DIVE, TT_POWE, TT_MODE):
+            if self.current_tok.type in (
+                TT_EQ, TT_PLUSE, TT_MINUSE, TT_MULE, TT_DIVE, TT_POWE, TT_MODE,
+                TT_BW_ANDE, TT_BW_ORE, TT_BW_XORE, TT_BW_LSHIFTE, TT_BW_RSHIFTE
+            ):
                 op_tok = self.current_tok
 
                 res.register_advancement()
