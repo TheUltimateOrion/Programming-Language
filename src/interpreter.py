@@ -1447,8 +1447,6 @@ def run(fn, text):
     lexer = Lexer(fn, text)
     tokens, error = lexer.make_tokens()
     if error: return None, error
-    
-    print(tokens)
 
     # Generate AST
     parser = Parser(tokens)
